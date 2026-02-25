@@ -1,4 +1,4 @@
-# MentorBoxAI: Requirements Document
+# MentorBoxAI: Requirements Documentation
 
 ---
 
@@ -44,9 +44,9 @@ MentorBoxAI is an AI-powered learning assistant that transforms complex technica
 
 ---
 
-## 📝 Requirements & Acceptance Criteria
+## 📝 Functional & Technical Requirements
 
-### Requirement 1: AI-Powered Learning Acceleration
+### Functional Requirement 1: AI-Powered Learning Acceleration
 
 **User Story:** As a learner (student, developer, or professional), I want to input any complex concept and receive an instant visual explanation, so that I can understand difficult topics faster without spending hours creating or searching for educational content.
 
@@ -61,7 +61,7 @@ MentorBoxAI is an AI-powered learning assistant that transforms complex technica
 
 ---
 
-### Requirement 2: Self-Healing Reliability for Productivity
+### Functional Requirement 2: Self-Healing Reliability for Productivity
 
 **User Story:** As a busy learner or developer, I want the system to work reliably without technical failures, so that I can focus on learning rather than troubleshooting AI-generated content.
 
@@ -76,7 +76,7 @@ MentorBoxAI is an AI-powered learning assistant that transforms complex technica
 
 ---
 
-### Requirement 3: Concept Simplification and Clarity
+### Functional Requirement 3: Concept Simplification and Clarity
 
 **User Story:** As someone trying to understand complex topics, I want the system to present information in a clear, structured way that doesn't overwhelm me, so that I can build understanding progressively.
 
@@ -91,7 +91,7 @@ MentorBoxAI is an AI-powered learning assistant that transforms complex technica
 
 ---
 
-### Requirement 4: AI-Enhanced Content Generation Pipeline
+### Functional Requirement 4: AI-Enhanced Content Generation Pipeline
 
 **User Story:** As an educator or content creator, I want the system to intelligently structure explanations with proper pacing and visual flow, so that the generated content is pedagogically sound and engaging.
 
@@ -107,7 +107,7 @@ MentorBoxAI is an AI-powered learning assistant that transforms complex technica
 
 ---
 
-### Requirement 5: Developer-Friendly Learning Interface
+### Functional Requirement 5: Developer-Friendly Learning Interface
 
 **User Story:** As a developer or technical professional, I want an intuitive interface that lets me quickly generate explanations for complex systems, APIs, or algorithms, so that I can improve my productivity when learning or teaching technical concepts.
 
@@ -122,7 +122,7 @@ MentorBoxAI is an AI-powered learning assistant that transforms complex technica
 
 ---
 
-### Requirement 6: Knowledge Organization and Skill Building
+### Functional Requirement 6: Knowledge Organization and Skill Building
 
 **User Story:** As a learner building expertise in a domain, I want the system to create content that builds on foundational concepts and includes practical insights, so that I can develop deep understanding rather than surface-level knowledge.
 
@@ -137,7 +137,7 @@ MentorBoxAI is an AI-powered learning assistant that transforms complex technica
 
 ---
 
-### Requirement 7: Scalable Learning Infrastructure
+### Technical Requirement 7: Scalable Learning Infrastructure
 
 **User Story:** As an organization or educational institution, I want robust backend services that can handle multiple concurrent learners, so that the platform can scale to support team learning and organizational knowledge sharing.
 
@@ -152,7 +152,7 @@ MentorBoxAI is an AI-powered learning assistant that transforms complex technica
 
 ---
 
-### Requirement 8: Learning-Optimized Error Handling
+### Technical Requirement 8: Learning-Optimized Error Handling
 
 **User Story:** As a learner using the system for important study or work sessions, I want clear feedback when issues occur and automatic recovery, so that technical problems don't interrupt my learning flow.
 
