@@ -1,0 +1,13 @@
+# GitHub Actions Deployment workflow placeholder
+name: Deploy
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Deploy step (customize for your infra)
+        run: echo "Deploying..."
