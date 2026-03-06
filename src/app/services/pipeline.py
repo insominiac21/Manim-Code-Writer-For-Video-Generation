@@ -541,15 +541,13 @@ def render_video(job_id: str, manim_file: Path) -> Optional[str]:
     return None
 
 def _format_code(code: str) -> str:
-    """Apply code formatting (optional, if black is available)."""
-    try:
-        import black
-        return black.format_str(code, mode=black.Mode())
-    except ImportError:
-        return code
-    except Exception as e:
-        print(f"[Format] Formatting failed: {e}")
-        return code
+    """Apply code formatting (optional, if black is available).
+    NOTE: Disabled — black can split long string literals across lines causing SyntaxErrors
+    in the generated Manim scripts (e.g. font='Arial' gets broken onto a new line).
+    """
+    # Do NOT run black on generated Manim code — it breaks long string literals
+    # that appear in MASTER_TEMPLATE_HEADER and the generated GeneratedScene class.
+    return code
 
 
 def run_pipeline(req) -> Dict[str, Any]:
