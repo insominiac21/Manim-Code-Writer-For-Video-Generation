@@ -548,6 +548,14 @@ BANNED ANIMATIONS (DO NOT USE - THEY DON'T EXIST IN MANIM):
 - ZoomIn, ZoomOut, Zoom, SlideIn, SlideOut, PopIn, PopOut, Emerge, Expand, Collapse
 - Morph (use Transform/ReplacementTransform), ShowCreation (use Create)
 
+CRITICAL STRING RULES (PREVENTS SYNTAX ERRORS):
+- NEVER break a string literal across two lines. All strings on ONE line.
+  ✗ WRONG: self.play_caption("This text
+      continues here")
+  ✓ RIGHT: self.play_caption("This text continues here")
+- For line breaks inside strings, use \\n escape: Text("Line 1\\nLine 2")
+- Max string length in any Text() or play_caption(): 60 characters
+
 VALID ANIMATIONS: FadeIn, FadeOut, Write, Create, GrowFromCenter, ShrinkToCenter,
 Transform, ReplacementTransform, Flash, Wiggle, Indicate, LaggedStart, AnimationGroup
 

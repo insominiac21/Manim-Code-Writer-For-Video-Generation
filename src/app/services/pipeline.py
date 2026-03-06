@@ -216,6 +216,18 @@ def layer5_refine_code(code: str) -> str:
         print(f"[Layer 5] Auto-fixing {wait_zero_count} self.wait(0) -> self.wait(1)")
         code = code.replace("self.wait(0)", "self.wait(1)")
 
+    # Pre-process: fix unterminated string literals (LLM sometimes breaks at 80-col wrap)
+    # Remove any lines that are just a lone closing quote or mismatched fragment
+    lines = code.split('\n')
+    fixed_lines = []
+    for line in lines:
+        # Drop lines that are purely a bare triple-quote outside a docstring context
+        stripped = line.strip()
+        if stripped in ("'''", '"""') and not fixed_lines:
+            continue  # skip stray leading quotes
+        fixed_lines.append(line)
+    code = '\n'.join(fixed_lines)
+
     # Pre-process: clamp excessive wait times
     code = re.sub(r'self\.wait\((\d+)\)', lambda m: f'self.wait({min(int(m.group(1)), 5)})', code)
 
@@ -610,7 +622,7 @@ def run_pipeline(req) -> Dict[str, Any]:
     # Layer 6: Production Validation + Auto-Fix
     print("[Layer 6] Validating and fixing code...")
     try:
-        max_attempts = 1 if fast_mode else 3
+        max_attempts = 2 if fast_mode else 3
         validated_code, validation_passed, attempts, metrics = validate_and_fix_code(
             refined_code, max_attempts=max_attempts, concept=req.concept
         )
