@@ -265,20 +265,11 @@ def layer5_refine_code(code: str) -> str:
     # Final: fix any remaining wait(0)
     refined_code = refined_code.replace("self.wait(0)", "self.wait(1)")
 
-    # ── INJECT MASTER TEMPLATE HEADER ──────────────────────────────────
-    # Like backend_local.py: strip raw imports then prepend full preamble
-    # so the saved .py file is self-contained (ColorfulScene is defined).
-    try:
-        from src.app.services.manim_templates import MASTER_TEMPLATE_HEADER
-        # Remove duplicate bare imports that MASTER_TEMPLATE_HEADER already provides
-        refined_code = refined_code.replace("from manim import *", "")
-        refined_code = refined_code.replace("import random", "")
-        refined_code = refined_code.replace("import numpy as np", "")
-        refined_code = refined_code.replace("import textwrap", "")
-        refined_code = MASTER_TEMPLATE_HEADER + "\n\n" + refined_code.strip()
-        print("[Layer 5] MASTER_TEMPLATE_HEADER injected — file is self-contained")
-    except Exception as e:
-        print(f"[Layer 5] Could not inject MASTER_TEMPLATE_HEADER: {e}")
+    # ── INJECT IMPORT PREAMBLE ────────────────────────────────────
+    # The generated file must import ColorfulScene at the top so it runs standalone.
+    # We use a direct import rather than embedding MASTER_TEMPLATE_HEADER (which
+    # contains literal \n inside strings that break Python syntax when written to disk).
+    refined_code = _inject_preamble(refined_code)
 
     return refined_code if refined_code else code
 
@@ -437,6 +428,50 @@ def check_concept_match(code: str, concept: str) -> dict:
     }
 
 
+def _inject_preamble(code: str) -> str:
+    """
+    Prepend a lightweight import preamble so the generated .py file is self-contained.
+
+    Instead of embedding the full MASTER_TEMPLATE_HEADER string (which contains
+    literal newlines inside string literals that break syntax when written to disk),
+    we inject a simple import that loads Colors, ColorfulScene, and all helpers
+    from manim_templates.py.  manim_templates.py must be on the Python path when
+    the file is rendered (set via PYTHONPATH in the render subprocess).
+    """
+    PREAMBLE = (
+        "from manim import *\n"
+        "import random\nimport numpy as np\nimport textwrap\n"
+        "import sys, os as _os\n"
+        "# Allow manim_templates to be found relative to this file\n"
+        "_mt_dir = _os.path.dirname(_os.path.abspath(__file__))\n"
+        "if _mt_dir not in sys.path:\n"
+        "    sys.path.insert(0, _mt_dir)\n"
+        "# Fallback: try the repo src/app/services directory\n"
+        "for _p in [_os.path.join(_mt_dir, '..', '..', '..', 'src', 'app', 'services'),\n"
+        "           _os.path.join(_mt_dir, '..', 'services')]:\n"
+        "    _p = _os.path.normpath(_p)\n"
+        "    if _os.path.isdir(_p) and _p not in sys.path:\n"
+        "        sys.path.insert(0, _p)\n"
+        "from manim_templates import Colors, ColorfulScene\n"
+        "# Re-export common color aliases\n"
+        "CYAN=Colors.CYAN; HOT_PINK=Colors.HOT_PINK; BRIGHT_YELLOW=Colors.BRIGHT_YELLOW\n"
+        "NEON_GREEN=Colors.NEON_GREEN; ORANGE=Colors.ORANGE; PURPLE=Colors.PURPLE\n"
+        "GOLD=Colors.GOLD; WHITE=Colors.WHITE; YELLOW=Colors.YELLOW; RED=Colors.RED\n"
+        "GREEN=Colors.GREEN; BLUE=Colors.BLUE; TEAL=Colors.TEAL; PINK=Colors.HOT_PINK\n"
+        "GRAY=Colors.GRAY; BLACK=Colors.BLACK; LT_GRAY=Colors.LT_GRAY\n"
+    )
+    # Strip bare imports the LLM added (preamble already has them)
+    code = re.sub(r'^from manim import \*\s*\n?', '', code, flags=re.MULTILINE)
+    code = re.sub(r'^import random\s*\n?', '', code, flags=re.MULTILINE)
+    code = re.sub(r'^import numpy as np\s*\n?', '', code, flags=re.MULTILINE)
+    code = re.sub(r'^import textwrap\s*\n?', '', code, flags=re.MULTILINE)
+    code = code.strip()
+    if "class ColorfulScene" not in code and "from manim_templates import" not in code:
+        code = PREAMBLE + "\n" + code
+        print("[Pipeline] Import preamble injected — file uses manim_templates import")
+    return code
+
+
 def _find_and_copy_video(job_id: str) -> Optional[str]:
     """Find generated video file and copy to serving location."""
     video_search = list((VIDEO_DIR / job_id).rglob("*.mp4"))
@@ -452,14 +487,19 @@ def _find_and_copy_video(job_id: str) -> Optional[str]:
 def _try_render_direct(job_id: str, manim_file: Path) -> Optional[str]:
     """Try rendering using direct manim command."""
     try:
+        # Build PYTHONPATH so manim_templates.py is importable from generated scripts
+        services_dir = str(Path(__file__).resolve().parent)
+        env = os.environ.copy()
+        env["PYTHONPATH"] = services_dir + os.pathsep + env.get("PYTHONPATH", "")
         result = subprocess.run(
             ["manim", "-qm", str(manim_file), "GeneratedScene",
              "--media_dir", str(VIDEO_DIR / job_id), "--disable_caching"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
+            env=env
         )
         if result.returncode == 0:
             return _find_and_copy_video(job_id)
-        print(f"[Render-Direct] Failed: {result.stderr[:200]}")
+        print(f"[Render-Direct] Failed: {result.stderr[:300]}")
         return None
     except FileNotFoundError:
         print("[Render-Direct] manim not in PATH")
@@ -475,14 +515,18 @@ def _try_render_direct(job_id: str, manim_file: Path) -> Optional[str]:
 def _try_render_python_module(job_id: str, manim_file: Path) -> Optional[str]:
     """Try rendering using python -m manim."""
     try:
+        services_dir = str(Path(__file__).resolve().parent)
+        env = os.environ.copy()
+        env["PYTHONPATH"] = services_dir + os.pathsep + env.get("PYTHONPATH", "")
         result = subprocess.run(
             ["python", "-m", "manim", "-qm", str(manim_file), "GeneratedScene",
              "--media_dir", str(VIDEO_DIR / job_id), "--disable_caching"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
+            env=env
         )
         if result.returncode == 0:
             return _find_and_copy_video(job_id)
-        print(f"[Render-Python] Failed: {result.stderr[:200]}")
+        print(f"[Render-Python] Failed: {result.stderr[:300]}")
         return None
     except Exception as e:
         print(f"[Render-Python] Error: {e}")
@@ -604,18 +648,8 @@ def run_pipeline(req) -> Dict[str, Any]:
         refined_code = raw_code
         if "class GeneratedScene(Scene)" in refined_code:
             refined_code = refined_code.replace("class GeneratedScene(Scene)", "class GeneratedScene(ColorfulScene)")
-        # Fast mode: still inject MASTER_TEMPLATE_HEADER so file is self-contained
-        try:
-            from src.app.services.manim_templates import MASTER_TEMPLATE_HEADER
-            if "class ColorfulScene" not in refined_code:
-                refined_code = refined_code.replace("from manim import *", "")
-                refined_code = refined_code.replace("import random", "")
-                refined_code = refined_code.replace("import numpy as np", "")
-                refined_code = refined_code.replace("import textwrap", "")
-                refined_code = MASTER_TEMPLATE_HEADER + "\n\n" + refined_code.strip()
-                print("[Pipeline] MASTER_TEMPLATE_HEADER injected (fast mode)")
-        except Exception as e:
-            print(f"[Pipeline] Could not inject preamble in fast mode: {e}")
+        # Fast mode: still inject preamble so file is self-contained
+        refined_code = _inject_preamble(refined_code)
 
     # Layer 6: Production Validation + Auto-Fix
     print("[Layer 6] Validating and fixing code...")
@@ -633,19 +667,11 @@ def run_pipeline(req) -> Dict[str, Any]:
         validation_passed = None
         metrics = {}
 
-    # Final safety: ensure MASTER_TEMPLATE_HEADER is in place
+    # Final safety: ensure preamble is in place
     # (Layer 6 fix loops might have rewritten the top of the file)
-    try:
-        from src.app.services.manim_templates import MASTER_TEMPLATE_HEADER
-        if "class ColorfulScene" not in final_code:
-            print("[Pipeline] Final safety: re-injecting MASTER_TEMPLATE_HEADER")
-            final_code = final_code.replace("from manim import *", "")
-            final_code = final_code.replace("import random", "")
-            final_code = final_code.replace("import numpy as np", "")
-            final_code = final_code.replace("import textwrap", "")
-            final_code = MASTER_TEMPLATE_HEADER + "\n\n" + final_code.strip()
-    except Exception:
-        pass
+    if "class ColorfulScene" not in final_code and "from src.app.services.manim_templates" not in final_code:
+        print("[Pipeline] Final safety: re-injecting preamble")
+        final_code = _inject_preamble(final_code)
 
     # Optional: Format code
     try:
