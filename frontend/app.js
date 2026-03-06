@@ -4,7 +4,7 @@
  */
 
 // Configuration - Local Python backend
-const API_BASE = 'http://13.126.103.26:8000';
+const API_BASE = '';
 
 // State
 let jobs = [];
