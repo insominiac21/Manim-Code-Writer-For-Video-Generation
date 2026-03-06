@@ -189,7 +189,9 @@ async function generateVideo() {
         max_scenes: parseInt(document.getElementById('maxScenes').value),
         detail_level: document.getElementById('detailLevel').value,
         style: document.getElementById('style').value,
-        allow_speaker_notes: document.getElementById('speakerNotes').checked
+        allow_speaker_notes: document.getElementById('speakerNotes').checked,
+        auto_render: true,
+        fast_mode: true
     };
 
     // Validate
