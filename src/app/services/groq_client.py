@@ -25,6 +25,7 @@ def _get_keys() -> list[str]:
         os.getenv("GROQ_API_KEY1"),
         os.getenv("GROQ_API_KEY2"),
         os.getenv("GROQ_API_KEY3"),
+        os.getenv("GROQ_API_KEY4"),
     ] if k]
 
 
