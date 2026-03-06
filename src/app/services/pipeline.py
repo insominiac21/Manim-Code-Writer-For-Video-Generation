@@ -253,6 +253,21 @@ def layer5_refine_code(code: str) -> str:
     # Final: fix any remaining wait(0)
     refined_code = refined_code.replace("self.wait(0)", "self.wait(1)")
 
+    # ── INJECT MASTER TEMPLATE HEADER ──────────────────────────────────
+    # Like backend_local.py: strip raw imports then prepend full preamble
+    # so the saved .py file is self-contained (ColorfulScene is defined).
+    try:
+        from src.app.services.manim_templates import MASTER_TEMPLATE_HEADER
+        # Remove duplicate bare imports that MASTER_TEMPLATE_HEADER already provides
+        refined_code = refined_code.replace("from manim import *", "")
+        refined_code = refined_code.replace("import random", "")
+        refined_code = refined_code.replace("import numpy as np", "")
+        refined_code = refined_code.replace("import textwrap", "")
+        refined_code = MASTER_TEMPLATE_HEADER + "\n\n" + refined_code.strip()
+        print("[Layer 5] MASTER_TEMPLATE_HEADER injected — file is self-contained")
+    except Exception as e:
+        print(f"[Layer 5] Could not inject MASTER_TEMPLATE_HEADER: {e}")
+
     return refined_code if refined_code else code
 
 
@@ -288,6 +303,19 @@ def validate_and_fix_code(code: str, max_attempts: int = 3, concept: str = "") -
     # AUTO-FIX: Pre-emptively fix common LLM hallucinations before any validation
     print("[Validator] Running auto-fix for common LLM hallucinations...")
     current_code = auto_fix_common_issues(current_code)
+
+    # CONCEPT VALIDATION: Ensure code actually covers the requested topic
+    if concept:
+        concept_check = check_concept_match(current_code, concept)
+        if not concept_check["matched"]:
+            print(f"[Validator] CONCEPT MISMATCH: {concept_check['reason']}")
+            from .reviewer import review_and_fix
+            fix_msg = (f"CRITICAL: The generated code explains '{concept_check['detected_topic']}' "
+                       f"but should explain '{concept}'. Rewrite to cover '{concept}' instead.")
+            fixed = review_and_fix(current_code, fix_msg)
+            if fixed:
+                current_code = fixed
+                metrics["fix_attempts"] += 1
 
     # CRITICAL INHERITANCE CHECK
     if "class GeneratedScene" in current_code and "class GeneratedScene(ColorfulScene)" not in current_code:
@@ -331,6 +359,70 @@ def validate_and_fix_code(code: str, max_attempts: int = 3, concept: str = "") -
 
     print(f"[Validator] Max attempts ({max_attempts}) reached")
     return current_code, False, max_attempts, metrics
+
+
+def check_concept_match(code: str, concept: str) -> dict:
+    """
+    Validate that generated code actually explains the requested concept.
+    Ported from backend_local.py. Checks keyword density + title match.
+    """
+    concept_lower = concept.lower()
+    code_lower = code.lower()
+
+    # Extract title from show_title() call
+    title_match = re.search(r'show_title\("([^"]+)"\)', code)
+    title = title_match.group(1).lower() if title_match else ""
+
+    concept_keywords: dict = {
+        "gravitational force": ["gravity", "gravitational", "force", "newton", "mass", "acceleration"],
+        "gravity": ["gravity", "gravitational", "force", "newton", "mass", "acceleration"],
+        "newton's laws": ["newton", "law", "inertia", "force", "mass", "acceleration"],
+        "mitosis": ["mitosis", "cell", "division", "chromosome", "spindle"],
+        "meiosis": ["meiosis", "gamete", "haploid", "diploid", "crossover"],
+        "photosynthesis": ["photosynthesis", "light", "chlorophyll", "glucose", "atp"],
+        "dna": ["dna", "replication", "nucleotide", "helicase", "strand"],
+        "cellular respiration": ["respiration", "atp", "glucose", "oxygen", "mitochondria"],
+        "immune": ["immune", "antibody", "virus", "bacteria", "antigen"],
+        "mendel": ["mendel", "allele", "dominant", "recessive", "punnett", "ratio"],
+    }
+
+    # Find expected keywords for concept
+    expected_keywords = []
+    for key, kws in concept_keywords.items():
+        if key in concept_lower:
+            expected_keywords = kws
+            break
+    if not expected_keywords:
+        expected_keywords = [w for w in concept_lower.split() if len(w) > 3]
+
+    found_keywords = [kw for kw in expected_keywords if kw in code_lower]
+    missing_keywords = [kw for kw in expected_keywords if kw not in code_lower]
+    match_ratio = len(found_keywords) / len(expected_keywords) if expected_keywords else 1.0
+
+    # Title mismatch detection
+    title_mismatch = False
+    if title:
+        if "mitosis" in title and "meiosis" in concept_lower:
+            title_mismatch = True
+        elif "meiosis" in title and "mitosis" in concept_lower and "meiosis" not in concept_lower:
+            title_mismatch = True
+
+    matched = match_ratio >= 0.4 and not title_mismatch
+    reason = ""
+    if not matched:
+        if title_mismatch:
+            reason = f"Title '{title}' doesn't match requested concept '{concept}'"
+        else:
+            reason = f"Low concept match ({int(match_ratio*100)}%): missing {missing_keywords[:3]}"
+
+    return {
+        "matched": matched,
+        "reason": reason,
+        "detected_topic": title or "Unknown",
+        "keywords_found": found_keywords,
+        "keywords_missing": missing_keywords,
+        "match_ratio": match_ratio,
+    }
 
 
 def _find_and_copy_video(job_id: str) -> Optional[str]:
@@ -502,6 +594,18 @@ def run_pipeline(req) -> Dict[str, Any]:
         refined_code = raw_code
         if "class GeneratedScene(Scene)" in refined_code:
             refined_code = refined_code.replace("class GeneratedScene(Scene)", "class GeneratedScene(ColorfulScene)")
+        # Fast mode: still inject MASTER_TEMPLATE_HEADER so file is self-contained
+        try:
+            from src.app.services.manim_templates import MASTER_TEMPLATE_HEADER
+            if "class ColorfulScene" not in refined_code:
+                refined_code = refined_code.replace("from manim import *", "")
+                refined_code = refined_code.replace("import random", "")
+                refined_code = refined_code.replace("import numpy as np", "")
+                refined_code = refined_code.replace("import textwrap", "")
+                refined_code = MASTER_TEMPLATE_HEADER + "\n\n" + refined_code.strip()
+                print("[Pipeline] MASTER_TEMPLATE_HEADER injected (fast mode)")
+        except Exception as e:
+            print(f"[Pipeline] Could not inject preamble in fast mode: {e}")
 
     # Layer 6: Production Validation + Auto-Fix
     print("[Layer 6] Validating and fixing code...")
@@ -518,6 +622,20 @@ def run_pipeline(req) -> Dict[str, Any]:
         final_code = refined_code
         validation_passed = None
         metrics = {}
+
+    # Final safety: ensure MASTER_TEMPLATE_HEADER is in place
+    # (Layer 6 fix loops might have rewritten the top of the file)
+    try:
+        from src.app.services.manim_templates import MASTER_TEMPLATE_HEADER
+        if "class ColorfulScene" not in final_code:
+            print("[Pipeline] Final safety: re-injecting MASTER_TEMPLATE_HEADER")
+            final_code = final_code.replace("from manim import *", "")
+            final_code = final_code.replace("import random", "")
+            final_code = final_code.replace("import numpy as np", "")
+            final_code = final_code.replace("import textwrap", "")
+            final_code = MASTER_TEMPLATE_HEADER + "\n\n" + final_code.strip()
+    except Exception:
+        pass
 
     # Optional: Format code
     try:

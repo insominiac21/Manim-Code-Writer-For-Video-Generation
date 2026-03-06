@@ -510,6 +510,33 @@ CRITICAL RULES - VIOLATION MEANS FAILURE:
 7. NO top-level code (e.g., self.wait()) outside methods.
 8. USE self.play_caption("text") for ALL captions.
 
+MANDATORY ColorfulScene METHODS (ALWAYS USE — NEVER use the raw equivalents):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  self.show_title("Title Text")
+      → Renders a gradient title with underline. USE THIS for EVERY scene title.
+      ✗ WRONG: title = Text("Photosynthesis"); self.play(Write(title))
+      ✓ RIGHT: self.show_title("Photosynthesis")
+
+  self.play_caption("Explanation under 60 chars")
+      → Shows a caption box at screen bottom for 2.5 s. USE THIS for all explanations.
+      ✗ WRONG: cap = Text("...").to_edge(DOWN); self.play(Write(cap))
+      ✓ RIGHT: self.play_caption("ATP is the energy currency of cells")
+
+  self.add_glow_pulse(obj, COLOR)
+      → Pulsing glow highlight on any mobject. Use to emphasize key objects.
+      ✓ EXAMPLE: self.add_glow_pulse(nucleus, CYAN)
+
+  self.create_labeled_shape(shape, "Label", DOWN)
+      → Shape + non-overlapping label. Use instead of manual .next_to(label, ...).
+      ✓ EXAMPLE: atom = self.create_labeled_shape(Circle(radius=0.5, color=CYAN), "Atom", DOWN)
+
+  self.show_key_point("Key fact for exam")
+      → Highlighted gold box. Use at takeaway / conclusion scenes.
+
+  self.add_wiggle_effect(obj)
+      → Wiggle/vibrate animation. Use for "excited" or "active" objects.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 SCREEN BOUNDS - CRITICAL (Manim screen is 14.2 x 8 units):
 - MAX text width: 12 units. Use font_size=22 for captions, font_size=36 for titles.
 - MAX caption length: 60 characters. Wrap with textwrap.fill(text, width=40).

@@ -71,6 +71,31 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ========================================
+// Clipboard Helper (works on HTTP and HTTPS)
+// ========================================
+
+function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).catch(() => legacyCopy(text));
+    } else {
+        legacyCopy(text);
+    }
+}
+
+function legacyCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); } catch(e) { console.warn('Copy failed', e); }
+    document.body.removeChild(ta);
+}
+
+// ========================================
 // Plan Modal Functions
 // ========================================
 
@@ -114,14 +139,14 @@ function initPlanModal() {
     // Copy buttons
     copyPlanBtn?.addEventListener('click', () => {
         const text = document.getElementById('planContent').textContent;
-        navigator.clipboard.writeText(text);
+        copyToClipboard(text);
         copyPlanBtn.textContent = '✓ Copied!';
         setTimeout(() => copyPlanBtn.textContent = '📋 Copy JSON', 2000);
     });
 
     copyCodeBtn?.addEventListener('click', () => {
         const text = document.getElementById('codeContent').textContent;
-        navigator.clipboard.writeText(text);
+        copyToClipboard(text);
         copyCodeBtn.textContent = '✓ Copied!';
         setTimeout(() => copyCodeBtn.textContent = '📋 Copy Code', 2000);
     });

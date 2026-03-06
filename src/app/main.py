@@ -17,11 +17,17 @@ app.add_middleware(
 )
 app.include_router(api_router)
 
+# Serve rendered videos at /videos/
+import os
+from src.app.services.pipeline import VIDEO_DIR
+if VIDEO_DIR.exists():
+    app.mount("/videos", StaticFiles(directory=str(VIDEO_DIR)), name="videos")
+
 # Serve frontend — API routes above take priority, static files catch the rest
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 if FRONTEND_DIR.exists():
-	@app.get("/")
-	def serve_index():
-		return FileResponse(str(FRONTEND_DIR / "index.html"))
+    @app.get("/")
+    def serve_index():
+        return FileResponse(str(FRONTEND_DIR / "index.html"))
 
-	app.mount("/", StaticFiles(directory=str(FRONTEND_DIR)), name="frontend")
+    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR)), name="frontend")

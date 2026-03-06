@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException
 from datetime import datetime
 from typing import Optional
-from src.app.services.pipeline import jobs, run_pipeline
+from src.app.services.pipeline import jobs, run_pipeline, render_video
 from src.app.models.job import GenerateRequest, JobResponse, StatusResponse
 
 router = APIRouter()
@@ -59,7 +59,12 @@ def create_job(request: GenerateRequest):
         })
         video_url = None
         if request.auto_render:
-            video_url = None
+            try:
+                video_url = render_video(job_id, manim_file)
+                print(f"[Endpoint] Render result: {video_url}")
+            except Exception as render_err:
+                print(f"[Endpoint] Render error: {render_err}")
+                video_url = None
         jobs[job_id].update({
             "status": "done",
             "progress": 100,
