@@ -124,6 +124,10 @@ def auto_fix_common_issues(source: str) -> str:
     
     # 8. Reduce scale factors that are too large
     fixed = re.sub(r'\.scale\(([2-9]\.\d|[1-9]\d)\)', '.scale(1.5)', fixed)
+
+    # 8b. Fix FadeOut(self.title, self.captions) -> FadeOut(*self.mobjects)
+    # self.title IS now set by show_title(), but if the LLM uses other undefined attrs, this is a safe fallback
+    fixed = re.sub(r'FadeOut\(self\.title[^)]*\)', 'FadeOut(*self.mobjects)', fixed)
     
     # 9. Fix long text strings that will overflow (truncate to ~45 chars)
     def truncate_long_text(match):

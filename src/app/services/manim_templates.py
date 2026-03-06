@@ -148,6 +148,7 @@ class ColorfulScene(Scene):
     def setup(self):
         self.camera.background_color = Colors.DARK_BG
         self.captions = VGroup()
+        self.title = VGroup()   # so FadeOut(self.title) never crashes
         self.add_background_particles()
 
     def add_background_particles(self):
@@ -248,7 +249,9 @@ class ColorfulScene(Scene):
         
         self.play(Write(title), GrowFromCenter(line), run_time=1)
         self.wait(0.3)
-        return VGroup(title, line)
+        title_group = VGroup(title, line)
+        self.title = title_group   # store so generated code can do FadeOut(self.title)
+        return title_group
 
     def add_fun_pulse(self, mobject, color=Colors.HOT_PINK, scale_factor=1.15):
         """Standard pulse scaling effect - SMALLER scale to avoid overflow."""

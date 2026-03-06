@@ -540,7 +540,7 @@ def _try_render_direct(job_id: str, manim_file: Path) -> Optional[str]:
         )
         if result.returncode == 0:
             return _find_and_copy_video(job_id)
-        print(f"[Render-Direct] Failed (rc={result.returncode}): {result.stderr[:400]}")
+        print(f"[Render-Direct] Failed (rc={result.returncode}): {result.stderr[-2000:]}")
         return None
     except FileNotFoundError:
         print("[Render-Direct] manim not in PATH")
@@ -569,7 +569,7 @@ def _try_render_python_module(job_id: str, manim_file: Path) -> Optional[str]:
         )
         if result.returncode == 0:
             return _find_and_copy_video(job_id)
-        print(f"[Render-Python] Failed (rc={result.returncode}): {result.stderr[:400]}")
+        print(f"[Render-Python] Failed (rc={result.returncode}): {result.stderr[-2000:]}")
         return None
     except Exception as e:
         print(f"[Render-Python] Error: {e}")
