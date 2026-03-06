@@ -460,15 +460,27 @@ def _inject_preamble(code: str) -> str:
         "GREEN=Colors.GREEN; BLUE=Colors.BLUE; TEAL=Colors.TEAL; PINK=Colors.HOT_PINK\n"
         "GRAY=Colors.GRAY; BLACK=Colors.BLACK; LT_GRAY=Colors.LT_GRAY\n"
     )
+
+    # If the code embeds MASTER_TEMPLATE_HEADER (pre-built templates), strip it.
+    # MASTER_TEMPLATE_HEADER always defines class ColorfulScene(Scene) inline,
+    # which contains split('\\n') stored as literal newlines — broken when saved.
+    # Strategy: keep only the `class GeneratedScene(...)` and later; discard earlier.
+    if "class ColorfulScene" in code:
+        # Find the start of GeneratedScene class (our actual content to keep)
+        gen_match = re.search(r'^class GeneratedScene', code, re.MULTILINE)
+        if gen_match:
+            code = code[gen_match.start():]
+            print("[Pipeline] Stripped MASTER_TEMPLATE_HEADER; keeping GeneratedScene class only")
+
     # Strip bare imports the LLM added (preamble already has them)
     code = re.sub(r'^from manim import \*\s*\n?', '', code, flags=re.MULTILINE)
     code = re.sub(r'^import random\s*\n?', '', code, flags=re.MULTILINE)
     code = re.sub(r'^import numpy as np\s*\n?', '', code, flags=re.MULTILINE)
     code = re.sub(r'^import textwrap\s*\n?', '', code, flags=re.MULTILINE)
+    code = re.sub(r'^from manim_templates import.*\n?', '', code, flags=re.MULTILINE)
     code = code.strip()
-    if "class ColorfulScene" not in code and "from manim_templates import" not in code:
-        code = PREAMBLE + "\n" + code
-        print("[Pipeline] Import preamble injected — file uses manim_templates import")
+    code = PREAMBLE + "\n" + code
+    print("[Pipeline] Import preamble injected — file uses manim_templates import")
     return code
 
 
