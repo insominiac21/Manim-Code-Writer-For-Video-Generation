@@ -3,6 +3,7 @@ default_app_import = True
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, RedirectResponse
 from pathlib import Path
 from src.app.api.v1.endpoints import router as api_router
 
@@ -16,7 +17,11 @@ app.add_middleware(
 )
 app.include_router(api_router)
 
-# Serve frontend static files
+# Serve frontend — API routes above take priority, static files catch the rest
 FRONTEND_DIR = Path(__file__).resolve().parents[3] / "frontend"
 if FRONTEND_DIR.exists():
-	app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+	@app.get("/")
+	def serve_index():
+		return FileResponse(str(FRONTEND_DIR / "index.html"))
+
+	app.mount("/", StaticFiles(directory=str(FRONTEND_DIR)), name="frontend")
