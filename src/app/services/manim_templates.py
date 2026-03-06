@@ -10,176 +10,6 @@ import random
 import textwrap
 from typing import Optional, Dict, Callable
 
-# ============================================================
-# MODULE-LEVEL Classes (importable from generated scripts)
-# These mirror the definitions inside MASTER_TEMPLATE_HEADER
-# so that `from manim_templates import Colors, ColorfulScene`
-# works when manim_templates is imported as a module.
-# ============================================================
-try:
-    from manim import *  # type: ignore
-
-    class Colors:
-        DARK_BG = "#0f0f2e"
-        CYAN = "#00FFFF"
-        HOT_PINK = "#FF69B4"
-        BRIGHT_YELLOW = "#FFD700"
-        NEON_GREEN = "#39FF14"
-        ORANGE = "#FF8C00"
-        PURPLE = "#9D00FF"
-        GOLD = "#FFD700"
-        WHITE = "#FFFFFF"
-        # Semantic aliases
-        LIGHT = BRIGHT_YELLOW
-        ENERGY = ORANGE
-        MOLECULE = NEON_GREEN
-        ELECTRON = CYAN
-        TEXT = WHITE
-        IMPORTANT = GOLD
-        # Standard color aliases
-        YELLOW = BRIGHT_YELLOW
-        RED = "#FF0000"
-        GREEN = NEON_GREEN
-        BLUE = "#0000FF"
-        TEAL = "#008080"
-        PINK = HOT_PINK
-        GRAY = "#808080"
-        BLACK = "#000000"
-        LT_GRAY = "#CCCCCC"
-
-    # Global aliases
-    CYAN = Colors.CYAN
-    HOT_PINK = Colors.HOT_PINK
-    BRIGHT_YELLOW = Colors.BRIGHT_YELLOW
-    NEON_GREEN = Colors.NEON_GREEN
-    ORANGE = Colors.ORANGE
-    PURPLE = Colors.PURPLE
-    GOLD = Colors.GOLD
-
-    class ColorfulScene(Scene):
-        """Base scene with vibrant academic styling."""
-        def setup(self):
-            self.camera.background_color = Colors.DARK_BG
-            self.captions = VGroup()
-            self.add_background_particles()
-
-        def add_background_particles(self):
-            for _ in range(12):
-                d = Dot(radius=random.uniform(0.02, 0.05),
-                        color=random.choice([Colors.CYAN, Colors.PURPLE]))
-                d.move_to(np.array([random.uniform(-7, 7), random.uniform(-4, 4), 0]))
-                d.set_opacity(random.uniform(0.15, 0.3))
-                d.velocity = np.array([random.uniform(-0.05, 0.05),
-                                       random.uniform(-0.05, 0.05), 0])
-
-                def update_dot(mob, dt):
-                    mob.shift(mob.velocity * dt)
-                    if mob.get_x() > 7.5: mob.set_x(-7.5)
-                    if mob.get_x() < -7.5: mob.set_x(7.5)
-                    if mob.get_y() > 4.5: mob.set_y(-4.5)
-                    if mob.get_y() < -4.5: mob.set_y(4.5)
-
-                d.add_updater(update_dot)
-                self.add(d)
-
-        def create_caption(self, text_str, font_size=20, color=None, position=DOWN):
-            color = color or Colors.WHITE
-            wrapped_text = textwrap.fill(str(text_str), width=55)
-            lines = wrapped_text.split('\n')
-            if len(lines) > 2:
-                wrapped_text = '\n'.join(lines[:2]) + "..."
-            caption = Text(wrapped_text, font_size=font_size, color=color,
-                           font="Arial", line_spacing=0.9)
-            if caption.width > 13:
-                caption.scale(13 / caption.width)
-            bg = SurroundingRectangle(caption, color=Colors.DARK_BG,
-                                      fill_color=Colors.DARK_BG, fill_opacity=0.92, buff=0.12)
-            bg.set_stroke(Colors.CYAN, 1)
-            caption_group = VGroup(bg, caption)
-            caption_group.to_edge(DOWN, buff=0.25)
-            if caption_group.get_left()[0] < -6.8:
-                caption_group.shift(RIGHT * (-6.8 - caption_group.get_left()[0]))
-            if caption_group.get_right()[0] > 6.8:
-                caption_group.shift(LEFT * (caption_group.get_right()[0] - 6.8))
-            return caption_group
-
-        def play_caption(self, text_str, duration=2.5):
-            new_caption = self.create_caption(text_str)
-            anims = [FadeIn(new_caption, shift=UP * 0.15)]
-            if self.captions:
-                anims.append(FadeOut(self.captions, shift=UP * 0.15))
-            self.play(*anims, run_time=0.4)
-            self.captions = new_caption
-            self.wait(duration)
-
-        def show_title(self, text_str):
-            title_text = str(text_str)[:25]
-            title = Text(title_text, font_size=36, font="Arial", weight=BOLD)
-            title.set_color_by_gradient(Colors.CYAN, Colors.GOLD)
-            title.to_edge(UP, buff=0.3)
-            if title.width > 13:
-                title.scale(13 / title.width)
-            line = Line(LEFT * min(4, title.width / 2 + 0.3),
-                        RIGHT * min(4, title.width / 2 + 0.3), color=Colors.HOT_PINK)
-            line.next_to(title, DOWN, buff=0.2)
-            self.play(Write(title), GrowFromCenter(line))
-            self.wait(1)
-            return VGroup(title, line)
-
-        def show_key_point(self, text_str, position=None):
-            position = position or ORIGIN
-            kp = Text(str(text_str)[:60], font_size=24, color=Colors.BRIGHT_YELLOW,
-                      font="Arial")
-            kp.move_to(position)
-            if kp.width > 12:
-                kp.scale(12 / kp.width)
-            self.play(Write(kp))
-            self.wait(1)
-            return kp
-
-        def add_glow_pulse(self, obj, color=None, scale=1.1, duration=0.5):
-            color = color or Colors.CYAN
-            self.play(obj.animate.scale(scale).set_color(color), run_time=duration)
-            self.play(obj.animate.scale(1 / scale), run_time=duration)
-
-        def add_wiggle_effect(self, obj, duration=0.3):
-            self.play(Wiggle(obj, scale_value=1.15, rotation_angle=0.04,
-                             run_time=duration))
-
-        def create_labeled_shape(self, shape, label_text, label_color=None,
-                                 direction=DOWN, buff=0.3):
-            label_color = label_color or Colors.WHITE
-            label = Text(str(label_text), font_size=22, color=label_color,
-                         font="Arial")
-            label.next_to(shape, direction, buff=buff)
-            return VGroup(shape, label)
-
-except ImportError:
-    # manim not available at import time (e.g. server startup).
-    # Generated scripts always run with manim available, so this is safe.
-    class Colors:  # type: ignore
-        DARK_BG = "#0f0f2e"
-        CYAN = "#00FFFF"
-        HOT_PINK = "#FF69B4"
-        BRIGHT_YELLOW = "#FFD700"
-        NEON_GREEN = "#39FF14"
-        ORANGE = "#FF8C00"
-        PURPLE = "#9D00FF"
-        GOLD = "#FFD700"
-        WHITE = "#FFFFFF"
-        YELLOW = BRIGHT_YELLOW
-        RED = "#FF0000"
-        GREEN = NEON_GREEN
-        BLUE = "#0000FF"
-        TEAL = "#008080"
-        PINK = HOT_PINK
-        GRAY = "#808080"
-        BLACK = "#000000"
-        LT_GRAY = "#CCCCCC"
-
-    class ColorfulScene:  # type: ignore
-        pass
-
 # ===========================================
 # Template Mappings
 # ===========================================
@@ -350,9 +180,9 @@ class ColorfulScene(Scene):
         wrapped_text = textwrap.fill(str(text_str), width=55)
         
         # Limit to 2 lines max for readability
-        lines = wrapped_text.split('\n')
+        lines = wrapped_text.splitlines()
         if len(lines) > 2:
-            wrapped_text = '\n'.join(lines[:2]) + "..."
+            wrapped_text = chr(10).join(lines[:2]) + "..."
         
         # Create caption with clear font
         caption = Text(wrapped_text, font_size=font_size, color=color, font="Arial", line_spacing=0.9)
@@ -798,6 +628,39 @@ class ColorfulScene(Scene):
         self.wait(1)
         return VGroup(title, line)
 '''
+
+# ============================================================
+# MODULE-LEVEL exec: make Colors, ColorfulScene, and all
+# color aliases importable from this module.
+# MASTER_TEMPLATE_HEADER is a self-contained Python script;
+# exec-ing it populates globals() with Colors and ColorfulScene.
+# ============================================================
+try:
+    exec(MASTER_TEMPLATE_HEADER, globals())  # type: ignore[arg-type]
+except Exception as _e:
+    # Fallback if manim is not installed (e.g. CI, server startup)
+    class Colors:  # type: ignore
+        DARK_BG = "#0f0f2e"
+        CYAN = "#00FFFF"
+        HOT_PINK = "#FF69B4"
+        BRIGHT_YELLOW = "#FFD700"
+        NEON_GREEN = "#39FF14"
+        ORANGE = "#FF8C00"
+        PURPLE = "#9D00FF"
+        GOLD = "#FFD700"
+        WHITE = "#FFFFFF"
+        YELLOW = BRIGHT_YELLOW
+        RED = "#FF0000"
+        GREEN = NEON_GREEN
+        BLUE = "#0000FF"
+        TEAL = "#008080"
+        PINK = HOT_PINK
+        GRAY = "#808080"
+        BLACK = "#000000"
+        LT_GRAY = "#CCCCCC"
+
+    class ColorfulScene:  # type: ignore
+        pass
 
 # ===========================================
 # Template Generators
