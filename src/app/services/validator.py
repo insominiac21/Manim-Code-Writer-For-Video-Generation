@@ -41,7 +41,7 @@ BANNED_MANIM_CLASSES = {
 }
 
 # Only allowed imports
-ALLOWED_IMPORTS = {"manim", "numpy", "np", "random", "textwrap", "math"}
+ALLOWED_IMPORTS = {"manim", "numpy", "np", "random", "textwrap", "math", "sys", "os", "manim_templates"}
 
 # Hallucinated animations that don't exist in Manim (mapped to valid replacements)
 HALLUCINATED_ANIMATIONS = {

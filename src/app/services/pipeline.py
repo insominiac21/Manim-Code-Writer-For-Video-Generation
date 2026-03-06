@@ -484,22 +484,42 @@ def _find_and_copy_video(job_id: str) -> Optional[str]:
     return None
 
 
+def _resolve_manim_bin() -> str:
+    """Resolve the manim executable: prefer venv, then PATH."""
+    # Check venv relative to this file: ../../../../venv/bin/manim (EC2 layout)
+    candidates = [
+        Path(sys.executable).parent / "manim",          # same venv as running python
+        Path("/home/ubuntu/app/venv/bin/manim"),         # EC2 hardcoded fallback
+        Path("manim"),                                   # plain PATH
+    ]
+    for c in candidates:
+        if shutil.which(str(c)):
+            return str(c)
+    return "manim"  # last resort
+
+
+def _resolve_python_bin() -> str:
+    """Return the current Python executable path."""
+    return sys.executable or "python3"
+
+
 def _try_render_direct(job_id: str, manim_file: Path) -> Optional[str]:
     """Try rendering using direct manim command."""
     try:
-        # Build PYTHONPATH so manim_templates.py is importable from generated scripts
         services_dir = str(Path(__file__).resolve().parent)
         env = os.environ.copy()
         env["PYTHONPATH"] = services_dir + os.pathsep + env.get("PYTHONPATH", "")
+        manim_bin = _resolve_manim_bin()
+        print(f"[Render-Direct] Using manim={manim_bin}")
         result = subprocess.run(
-            ["manim", "-qm", str(manim_file), "GeneratedScene",
+            [manim_bin, "-qm", str(manim_file), "GeneratedScene",
              "--media_dir", str(VIDEO_DIR / job_id), "--disable_caching"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
             env=env
         )
         if result.returncode == 0:
             return _find_and_copy_video(job_id)
-        print(f"[Render-Direct] Failed: {result.stderr[:300]}")
+        print(f"[Render-Direct] Failed (rc={result.returncode}): {result.stderr[:400]}")
         return None
     except FileNotFoundError:
         print("[Render-Direct] manim not in PATH")
@@ -513,20 +533,22 @@ def _try_render_direct(job_id: str, manim_file: Path) -> Optional[str]:
 
 
 def _try_render_python_module(job_id: str, manim_file: Path) -> Optional[str]:
-    """Try rendering using python -m manim."""
+    """Try rendering using python -m manim (uses same venv as server)."""
     try:
         services_dir = str(Path(__file__).resolve().parent)
         env = os.environ.copy()
         env["PYTHONPATH"] = services_dir + os.pathsep + env.get("PYTHONPATH", "")
+        python_bin = _resolve_python_bin()
+        print(f"[Render-Python] Using python={python_bin}")
         result = subprocess.run(
-            ["python", "-m", "manim", "-qm", str(manim_file), "GeneratedScene",
+            [python_bin, "-m", "manim", "-qm", str(manim_file), "GeneratedScene",
              "--media_dir", str(VIDEO_DIR / job_id), "--disable_caching"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
             env=env
         )
         if result.returncode == 0:
             return _find_and_copy_video(job_id)
-        print(f"[Render-Python] Failed: {result.stderr[:300]}")
+        print(f"[Render-Python] Failed (rc={result.returncode}): {result.stderr[:400]}")
         return None
     except Exception as e:
         print(f"[Render-Python] Error: {e}")
