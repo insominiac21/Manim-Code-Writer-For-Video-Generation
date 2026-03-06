@@ -74,11 +74,16 @@ def create_job(request: GenerateRequest):
 			"understanding": result["understanding"]
 		})
 
-		# Auto-render if enabled (stub)
+		# Auto-render if enabled
 		video_url = None
 		if request.auto_render:
-			# video_url = render_video(job_id, manim_file)
-			video_url = None
+			try:
+				from src.app.services.pipeline import render_video
+				jobs[job_id]["current_step"] = "rendering"
+				video_url = render_video(job_id, manim_file)
+			except Exception as render_err:
+				print(f"[Render] Error: {render_err}")
+				video_url = None
 
 		jobs[job_id].update({
 			"status": "done",

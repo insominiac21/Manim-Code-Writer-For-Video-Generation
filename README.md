@@ -1,17 +1,18 @@
 
 # MentorBoxAI: Production-Grade Educational Video Engine
 
-MentorBoxAI is a robust FastAPI backend for generating professional 3Blue1Brown-style educational animations from a single text prompt. The new structure implements a 6-layer AI pipeline, AWS Bedrock LLM integration, and a modular src/app layout for scalability, reliability, and developer productivity.
+MentorBoxAI is a robust FastAPI backend for generating professional 3Blue1Brown-style educational animations from a single text prompt. The system implements a 6-layer AI pipeline, **Groq LLM integration** (llama-3.3-70b-versatile) with automatic key rotation, and a modular `src/app` layout for scalability, reliability, and developer productivity.
 
 ---
 
 ## 🚀 Key Features
 - **6-Layer AI Pipeline:** Understanding, Storyboarding, Verification, Code Generation, Refinement, Validation & Auto-Fix
-- **AWS Bedrock Claude 3 Sonnet:** Industry-grade LLM for prompt engineering and orchestration
-- **Zero-LaTeX Architecture:** Crash-proof, screen-safe visuals
-- **Few-Shot Prompting:** Consistent Manim code quality
-- **Self-Healing Logic:** Automatic error detection and correction
-- **Production-Ready Structure:** Modular src/app layout, versioned API, CI/CD, Alembic migrations, and test coverage
+- **Groq LLM (llama-3.3-70b-versatile):** Fast inference with automatic key rotation across 3 API keys
+- **Zero-LaTeX Architecture:** Crash-proof, screen-safe visuals using only Text() objects
+- **Golden Few-Shot Prompting:** NEET/JEE quality Manim code with biology, physics, chemistry examples
+- **Self-Healing Logic:** AST-based static validation + runtime smoke test + Groq-powered auto-fix loop
+- **Production-Ready Structure:** Modular src/app layout, versioned API, Docker, scripts, and test coverage
+- **AWS Integration:** S3, DynamoDB, Lambda (ap-south-1 Mumbai) — Bedrock NOT used
 
 ---
 
@@ -20,24 +21,30 @@ MentorBoxAI is a robust FastAPI backend for generating professional 3Blue1Brown-
 github-ready/
 ├── src/
 │   └── app/
-│       ├── api/v1/endpoints.py      # FastAPI endpoints
-│       ├── models/job.py           # Pydantic models
+│       ├── api/v1/endpoints.py       # FastAPI endpoints
+│       ├── models/job.py             # Pydantic models
 │       ├── services/
-│       │   ├── pipeline.py         # 6-layer pipeline logic
-│       │   ├── prompts.py          # Prompt templates
-│       │   ├── few_shot_examples.py# Golden few-shot examples
-│       ├── main.py                 # FastAPI app entry
+│       │   ├── groq_client.py        # Groq API client with key rotation
+│       │   ├── pipeline.py           # 6-layer pipeline logic
+│       │   ├── prompts.py            # All prompt templates (L1-L5 + system)
+│       │   ├── few_shot_examples.py  # Golden few-shot examples (NEET quality)
+│       │   ├── validator.py          # AST static analysis + runtime smoke test
+│       │   └── reviewer.py          # Groq-powered auto-fix for validation errors
+│       ├── core/config.py           # Settings (Groq keys, AWS, LLM params)
+│       ├── main.py                  # FastAPI app entry
 │       └── __init__.py
-├── .env.example                    # AWS Bedrock config template
-├── README.md                       # Project documentation
-├── requirements.txt                # Python dependencies
-├── alembic/                        # Database migrations
-├── tests/                          # Unit and integration tests
-├── scripts/                        # Utility scripts
+├── .env.example                     # Groq + AWS config template
+├── Dockerfile                       # Production container (python:3.11-slim + ffmpeg)
+├── README.md                        # Project documentation
+├── requirements.txt                 # Python dependencies
+├── bedrock_ping_test.py             # Groq key + AWS service connectivity check
+├── scripts/
+│   ├── start.sh                     # Server startup (validates keys first)
+│   └── deploy_aws.sh               # ECR build + ECS deploy
 ├── output/
-│   ├── manim/                      # Generated Manim scripts
-│   └── videos/                     # Rendered MP4 files
-└── frontend/                       # Dashboard UI
+│   ├── manim/                       # Generated Manim scripts
+│   └── videos/                      # Rendered MP4 files
+└── frontend/                        # Dashboard UI
 ```
 
 ---
