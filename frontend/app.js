@@ -343,7 +343,13 @@ function renderJobs() {
         ` : ''}
       </div>
       ${job.status === 'done' ? `
-        <button class="btn-view-plan" onclick="event.stopPropagation(); openPlanPreview('${job.job_id}')">📋 View Plan</button>
+        <div class="job-actions">
+          ${job.video_url ? `
+            <button class="btn-watch-video" onclick="event.stopPropagation(); openVideo('${job.job_id}')">▶ Watch</button>
+            <a class="btn-download-video" href="${job.video_url}" download="${job.concept.replace(/\s+/g,'_')}.mp4" onclick="event.stopPropagation()">⬇ Download</a>
+          ` : '<span class="no-video-badge">No video</span>'}
+          <button class="btn-view-plan" onclick="event.stopPropagation(); openPlanPreview('${job.job_id}')">📋 Plan</button>
+        </div>
       ` : ''}
       <div class="job-status ${job.status}">${formatStatus(job.status)}</div>
     </div>

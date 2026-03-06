@@ -85,6 +85,11 @@ def safe_json_loads(text: str) -> dict:
     if not text:
         return {}
 
+    # Detect HTTP error responses from groq_client before attempting JSON parse
+    stripped = text.strip()
+    if stripped.startswith("HTTP 4") or stripped.startswith("HTTP 5"):
+        raise RuntimeError(f"LLM API error: {stripped[:200]}")
+
     # Clean up common markdown block issues
     text = text.strip()
     if text.startswith("```"):
@@ -149,6 +154,10 @@ def layer4_generate_code(plan: dict, concept: str, goal: str = "") -> str:
     """
     if not goal:
         goal = f"Educational visualization of {concept}"
+
+    # Abort early if upstream layers returned an error dict instead of real plan data
+    if plan and "error" in plan and not any(k in plan for k in ("scenes", "timeline", "total_duration", "actions")):
+        raise RuntimeError(f"Planning failed upstream: {plan.get('error')} — {plan.get('raw_content', '')[:120]}")
 
     # Try pre-built templates first (most reliable)
     try:

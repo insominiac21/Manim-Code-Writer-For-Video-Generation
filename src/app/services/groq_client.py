@@ -63,13 +63,20 @@ def call_groq(
     if not all_keys:
         raise RuntimeError("No Groq API keys configured. Check GROQ_API_KEY1/2/3 in .env")
 
+    def _is_success(resp) -> bool:
+        """Distinguish real LLM content from HTTP error strings returned by _try_key."""
+        if not resp:
+            return False
+        s = str(resp)
+        return not s.startswith(("HTTP ", "Connection", "Read timed", "timeout", "Max retries"))
+
     last_error = None
     # One pass: try every available key
     for key in _available_keys():
         response = _try_key(key, model, system_prompt, prompt, max_tokens, temperature)
-        if isinstance(response, str):
+        if _is_success(response):
             return response
-        last_error = response  # error string
+        last_error = response  # error string — continue to next key
 
     # All keys are in cooldown — wait for the soonest one
     now = time.time()
@@ -83,7 +90,7 @@ def call_groq(
     for key in all_keys:
         if _key_cooldown.get(key, 0) <= time.time():
             response = _try_key(key, model, system_prompt, prompt, max_tokens, temperature)
-            if isinstance(response, str):
+            if _is_success(response):
                 return response
             last_error = response
 

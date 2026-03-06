@@ -370,6 +370,59 @@ body {
   border-left: 4px solid var(--success);
 }
 
+.job-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-watch-video {
+  padding: 8px 14px;
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn-watch-video:hover {
+  background: var(--primary-dark, #5a4fcf);
+  transform: scale(1.04);
+}
+
+.btn-download-video {
+  padding: 8px 14px;
+  background: transparent;
+  border: 2px solid var(--success);
+  border-radius: var(--radius-sm);
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn-download-video:hover {
+  background: var(--success);
+  color: white;
+}
+
+.no-video-badge {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 .btn-view-plan {
   padding: 8px 14px;
   background: var(--bg-input);
