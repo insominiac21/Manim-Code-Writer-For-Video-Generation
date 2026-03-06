@@ -18,7 +18,7 @@ app.add_middleware(
 app.include_router(api_router)
 
 # Serve frontend — API routes above take priority, static files catch the rest
-FRONTEND_DIR = Path(__file__).resolve().parents[3] / "frontend"
+FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 if FRONTEND_DIR.exists():
 	@app.get("/")
 	def serve_index():
