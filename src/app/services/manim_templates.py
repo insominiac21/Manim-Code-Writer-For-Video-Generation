@@ -231,7 +231,7 @@ class ColorfulScene(Scene):
             
         return caption_group
 
-    def play_caption(self, text_str, duration=2.5):
+    def play_caption(self, text_str, duration=2.0):
         """
         Play a caption with smooth transition. Duration slightly longer for reading.
         """

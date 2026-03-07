@@ -313,8 +313,8 @@ def layer5_refine_code(code: str) -> str:
         fixed_lines.append(line)
     code = '\n'.join(fixed_lines)
 
-    # Pre-process: clamp excessive wait times
-    code = re.sub(r'self\.wait\((\d+)\)', lambda m: f'self.wait({min(int(m.group(1)), 5)})', code)
+    # Pre-process: clamp excessive wait times — max 2s per wait to eliminate dead air
+    code = re.sub(r'self\.wait\((\d+)\)', lambda m: f'self.wait({min(int(m.group(1)), 2)})', code)
 
     # Pre-process: fix out-of-bounds shifts
     code = code.replace('.shift(UP * 3)', '.to_edge(UP)')

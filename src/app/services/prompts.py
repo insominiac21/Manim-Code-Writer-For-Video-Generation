@@ -410,6 +410,17 @@ LAYER4_PROMPT = """You are a CINEMATIC Manim animator creating 3Blue1Brown-quali
 CRITICAL RULES - READ FIRST!
 ═══════════════════════════════════════════════════════════════════════════════
 
+0. FOLLOW THE SCENE PLAN — THIS IS LAW, NOT A SUGGESTION!
+   The VIDEO PLAN above has scenes, each with an actions[] list.
+   ✅  Create EXACTLY one code block per planned scene — in order.
+   ✅  Implement EVERY action[] item listed for that scene.
+   ✅  Use the objects, animations, and captions named in the plan.
+   ✅  Keep self.wait() between scenes to ≤ 1 second (no dead air!).
+   ❌  DO NOT invent scenes not in the plan.
+   ❌  DO NOT skip or replace planned actions with simpler ones.
+   ❌  DO NOT add extra self.wait() pads between scenes (waste of screen time).
+   Bad example: plan says "MoveAlongPath electron", you write "self.wait(2)" instead — FORBIDDEN.
+
 1. TITLE MAX 25 CHARACTERS!
    - GOOD: "Mendel's Laws" (13 chars)
    - BAD: "How Mendel's Laws Explain Inheritance Patterns"
