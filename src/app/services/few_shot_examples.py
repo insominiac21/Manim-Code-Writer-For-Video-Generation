@@ -175,6 +175,233 @@ class GeneratedScene(ColorfulScene):
 '''
 
 # ===========================================
+# GOLDEN EXAMPLE: Star Life Cycle (CINEMATIC MASTER TEMPLATE)
+# Demonstrates ALL advanced techniques:
+#   - Procedural particle cloud (50 dots, LaggedStart)
+#   - Gravity collapse (.animate.scale())
+#   - ReplacementTransform to morph objects between stages
+#   - Fusion reaction with Flash
+#   - Split-screen dual paths
+#   - Circular cycle diagram with GrowArrow
+#   - Rotating animations
+#   - Concentric ring shock waves
+# ===========================================
+GOLDEN_EXAMPLE_STAR = '''from manim import *
+import random
+import numpy as np
+
+class GeneratedScene(ColorfulScene):
+    def construct(self):
+        # ═══════════════════════════════════════
+        # SCENE 1: Introduction
+        # ═══════════════════════════════════════
+        title_group = self.show_title("Life Cycle of a Star")
+        self.play_caption("From a nebula of gas to a glowing star")
+        self.wait(1)
+        self.play(FadeOut(title_group, self.captions))
+
+        # ═══════════════════════════════════════
+        # SCENE 2: Nebula — Procedural Particle Cloud
+        # 50 dots with random position, size, opacity, color
+        # ═══════════════════════════════════════
+        nebula_cloud = VGroup()
+        for _ in range(50):
+            r = random.uniform(0.5, 2.5)
+            theta = random.uniform(0, 2 * PI)
+            x = r * np.cos(theta) * random.uniform(0.8, 1.2)
+            y = r * np.sin(theta) * random.uniform(0.6, 1.0)
+            dot = Dot(
+                radius=random.uniform(0.03, 0.10),
+                color=random.choice([Colors.PURPLE, Colors.HOT_PINK, Colors.CYAN])
+            )
+            dot.move_to([x, y, 0])
+            dot.set_opacity(random.uniform(0.3, 0.8))
+            nebula_cloud.add(dot)
+
+        # LaggedStart: particles appear one by one (cinematic!)
+        self.play(
+            LaggedStart(*[FadeIn(d, scale=0.5) for d in nebula_cloud], lag_ratio=0.03),
+            run_time=2
+        )
+        nebula_label = Text("Nebula (Gas & Dust Cloud)", font_size=20,
+                            color=Colors.BRIGHT_YELLOW)
+        nebula_label.to_edge(DOWN, buff=0.8)
+        self.play(Write(nebula_label))
+        self.play_caption("Stars are born inside massive nebulae")
+        self.wait(1)
+
+        # ═══════════════════════════════════════
+        # SCENE 3: Gravity Collapse → Protostar
+        # Nebula contracts; ReplacementTransform to protostar glow
+        # ═══════════════════════════════════════
+        self.play_caption("Gravity pulls the cloud inward...")
+        # Gravity collapse: scale the entire cloud to a point
+        self.play(nebula_cloud.animate.scale(0.25), run_time=2)
+
+        # Protostar: bright glowing core
+        protostar_core = Circle(radius=0.5, color=Colors.ORANGE, fill_opacity=0.9)
+        protostar_core.set_stroke(Colors.BRIGHT_YELLOW, width=6)
+        protostar_glow = Circle(radius=0.8, color=Colors.ORANGE, fill_opacity=0.0)
+        protostar_glow.set_stroke(Colors.ORANGE, width=3, opacity=0.5)
+        protostar = VGroup(protostar_glow, protostar_core)
+
+        # MORPH nebula cloud → protostar (ReplacementTransform!)
+        self.play(ReplacementTransform(nebula_cloud, protostar), run_time=1.5)
+        self.play(FadeOut(nebula_label))
+        proto_label = Text("Protostar", font_size=20, color=Colors.BRIGHT_YELLOW)
+        proto_label.next_to(protostar, DOWN, buff=0.4)
+        self.play(Write(proto_label))
+        self.add_glow_pulse(protostar_core, Colors.ORANGE)
+        self.play_caption("Gravitational collapse creates a Protostar")
+        self.wait(1)
+
+        # ═══════════════════════════════════════
+        # SCENE 4: Nuclear Fusion — H + H → He
+        # ═══════════════════════════════════════
+        self.play(FadeOut(protostar, proto_label, self.captions))
+
+        fusion_title = Text("Nuclear Fusion Ignites!", font_size=26,
+                            color=Colors.GOLD, weight=BOLD)
+        fusion_title.to_edge(UP, buff=0.5)
+        self.play(Write(fusion_title))
+
+        # Two hydrogen nuclei approach
+        h1_dot = Circle(radius=0.3, color=Colors.CYAN, fill_opacity=0.8).move_to(LEFT * 2)
+        h1_lbl = Text("H", font_size=22, color=WHITE).move_to(LEFT * 2)
+        h2_dot = Circle(radius=0.3, color=Colors.CYAN, fill_opacity=0.8).move_to(RIGHT * 2)
+        h2_lbl = Text("H", font_size=22, color=WHITE).move_to(RIGHT * 2)
+        h1 = VGroup(h1_dot, h1_lbl)
+        h2 = VGroup(h2_dot, h2_lbl)
+
+        self.play(GrowFromCenter(h1), GrowFromCenter(h2))
+        self.play_caption("Two hydrogen nuclei collide at extreme temperatures")
+        # Collision
+        self.play(h1.animate.move_to(LEFT * 0.35), h2.animate.move_to(RIGHT * 0.35),
+                  run_time=1.0)
+        # Explosion flash!
+        self.play(Flash(ORIGIN, color=Colors.GOLD, line_length=0.7, num_lines=14))
+
+        # Helium product
+        he_dot = Circle(radius=0.45, color=Colors.GOLD, fill_opacity=0.9)
+        he_dot.set_stroke(Colors.BRIGHT_YELLOW, width=4)
+        he_lbl = Text("He", font_size=22, color=WHITE).move_to(ORIGIN)
+        he = VGroup(he_dot, he_lbl)
+
+        # MORPH the two H atoms into one He atom
+        self.play(ReplacementTransform(VGroup(h1, h2), he), run_time=1.0)
+        self.add_glow_pulse(he_dot, Colors.GOLD)
+
+        energy_txt = Text("+ 26.7 MeV energy released!", font_size=20, color=Colors.GOLD)
+        energy_txt.next_to(he, DOWN, buff=0.5)
+        self.play(Write(energy_txt))
+        self.play_caption("4H → He releases enormous energy (E = mc²)")
+        self.wait(1.5)
+
+        # ═══════════════════════════════════════
+        # SCENE 5: Split-Screen — Two Stellar Fates
+        # ═══════════════════════════════════════
+        self.play(FadeOut(fusion_title, he, energy_txt, self.captions))
+
+        # Vertical divider
+        divider = Line(UP * 3.2, DOWN * 3.2, color=WHITE, stroke_opacity=0.4)
+        self.play(Create(divider))
+
+        # Left: Low-Mass → White Dwarf
+        low_hdr = Text("Low Mass Star", font_size=18, color=Colors.CYAN, weight=BOLD)
+        low_hdr.move_to(LEFT * 3.2 + UP * 2.5)
+        self.play(Write(low_hdr))
+
+        low_star = Circle(radius=0.5, color=Colors.BRIGHT_YELLOW, fill_opacity=0.7)
+        low_star.move_to(LEFT * 3.2 + UP * 1.0)
+        low_star_lbl = Text("Main Sequence\nStar", font_size=14, color=Colors.BRIGHT_YELLOW)
+        low_star_lbl.next_to(low_star, DOWN, buff=0.2)
+        self.play(GrowFromCenter(low_star), Write(low_star_lbl))
+
+        low_arrow = Arrow(low_star.get_bottom(), low_star.get_bottom() + DOWN * 1.0,
+                          color=Colors.CYAN)
+        self.play(GrowArrow(low_arrow))
+
+        white_dwarf = Circle(radius=0.3, color=Colors.CYAN, fill_opacity=0.8)
+        white_dwarf.next_to(low_arrow, DOWN, buff=0.1)
+        wd_lbl = Text("White Dwarf", font_size=14, color=Colors.CYAN)
+        wd_lbl.next_to(white_dwarf, DOWN, buff=0.2)
+        self.play(GrowFromCenter(white_dwarf), Write(wd_lbl))
+
+        # Right: High-Mass → Black Hole
+        high_hdr = Text("High Mass Star", font_size=18, color=Colors.RED, weight=BOLD)
+        high_hdr.move_to(RIGHT * 3.2 + UP * 2.5)
+        self.play(Write(high_hdr))
+
+        high_star = Circle(radius=0.7, color=Colors.RED, fill_opacity=0.7)
+        high_star.move_to(RIGHT * 3.2 + UP * 1.0)
+        high_star_lbl = Text("Giant Star", font_size=14, color=Colors.RED)
+        high_star_lbl.next_to(high_star, DOWN, buff=0.2)
+        self.play(GrowFromCenter(high_star), Write(high_star_lbl))
+
+        high_arrow = Arrow(high_star.get_bottom(), high_star.get_bottom() + DOWN * 1.0,
+                           color=Colors.RED)
+        self.play(GrowArrow(high_arrow))
+
+        # Concentric shock-wave rings for supernova
+        rings = VGroup(*[
+            Circle(radius=0.3 + i * 0.3, color=Colors.ORANGE,
+                   stroke_opacity=max(0.05, 0.7 - i * 0.2))
+            for i in range(4)
+        ])
+        rings.next_to(high_arrow, DOWN, buff=0.1)
+        self.play(LaggedStart(*[Create(r) for r in rings], lag_ratio=0.25))
+
+        bh_lbl = Text("Black Hole", font_size=14, color=Colors.HOT_PINK)
+        bh_lbl.next_to(rings, DOWN, buff=0.2)
+        self.play(Write(bh_lbl))
+        self.play_caption("Mass determines the stellar fate")
+        self.wait(1.5)
+
+        # ═══════════════════════════════════════
+        # SCENE 6: Takeaway — Circular Cycle Diagram
+        # ═══════════════════════════════════════
+        self.play(FadeOut(*self.mobjects))
+
+        cycle_title = Text("The Stellar Lifecycle", font_size=26,
+                           color=Colors.GOLD, weight=BOLD)
+        cycle_title.to_edge(UP, buff=0.5)
+        self.play(Write(cycle_title))
+
+        stages = ["Nebula", "Protostar", "Main\nSequence", "Giant", "Remnant"]
+        stage_colors = [Colors.PURPLE, Colors.ORANGE, Colors.BRIGHT_YELLOW,
+                        Colors.RED, Colors.CYAN]
+        cycle_radius = 2.0
+
+        stage_dots = VGroup()
+        stage_labels = VGroup()
+        for i, (name, col) in enumerate(zip(stages, stage_colors)):
+            angle = -PI / 2 + i * 2 * PI / len(stages)
+            pos = cycle_radius * np.array([np.cos(angle), np.sin(angle), 0])
+            dot = Dot(radius=0.28, color=col)
+            dot.move_to(pos)
+            stage_dots.add(dot)
+            lbl = Text(name, font_size=14, color=col)
+            lbl.move_to(pos * 1.45)
+            stage_labels.add(lbl)
+
+        self.play(LaggedStart(*[GrowFromCenter(d) for d in stage_dots], lag_ratio=0.2))
+        self.play(LaggedStart(*[Write(l) for l in stage_labels], lag_ratio=0.2))
+
+        # Arrows connecting stages
+        for i in range(len(stages)):
+            a = stage_dots[i].get_center()
+            b = stage_dots[(i + 1) % len(stages)].get_center()
+            mid = (a + b) / 2
+            direction = b - a
+            arr = Arrow(a, b, buff=0.3, color=WHITE, stroke_opacity=0.6)
+            self.play(GrowArrow(arr), run_time=0.3)
+
+        self.play_caption("Key Point: Stars are recycled — nebula to remnant")
+        self.wait(2)
+        self.play(FadeOut(*self.mobjects))
+'''
+
+# ===========================================
 # GOLDEN EXAMPLE: Cellular Respiration (NEET Biology)
 # ===========================================
 GOLDEN_EXAMPLE_RESPIRATION = '''from manim import *
@@ -788,53 +1015,64 @@ class GeneratedScene(ColorfulScene):
 
 def get_few_shot_for_topic(topic: str) -> str:
     """Return the most relevant few-shot example for a topic.
-    
-    NEET-Quality Examples:
-    - GOLDEN_EXAMPLE_VACCINE: For immunity, vaccines, antibodies, pathogens
-    - GOLDEN_EXAMPLE_RESPIRATION: For cellular processes, ATP, metabolism
-    - GOLDEN_EXAMPLE_FUSION: For physics, nuclear, stars, energy
-    
-    All examples follow MANDATORY structure:
+
+    Examples (cinematic quality, all use ColorfulScene):
+    - GOLDEN_EXAMPLE_STAR:        ← PRIMARY DEFAULT — shows ALL cinematic techniques:
+                                    particle cloud, LaggedStart, ReplacementTransform,
+                                    gravity collapse, fusion reaction, split-screen,
+                                    cycle diagram, concentric rings
+    - GOLDEN_EXAMPLE_VACCINE:     immunity, vaccines, antibodies, pathogens
+    - GOLDEN_EXAMPLE_RESPIRATION: cellular processes, ATP, metabolism
+    - GOLDEN_EXAMPLE_FUSION:      nuclear physics, stars, energy
+
+    MANDATORY structure:
     INTRO (10%) → CORE CONTENT (70-80%) → TAKEAWAY (10%)
     """
     topic_lower = topic.lower()
-    
-    # PRIORITY 1: Vaccine/Immunity Topics (GOLDEN_EXAMPLE_VACCINE)
-    if any(kw in topic_lower for kw in ['vaccine', 'immun', 'antibod', 'antigen', 'pathogen', 
-                                         'virus infect', 'immune system', 'lymphocyte', 
+
+    # PRIORITY 1: Vaccine/Immunity Topics
+    if any(kw in topic_lower for kw in ['vaccine', 'immun', 'antibod', 'antigen', 'pathogen',
+                                         'virus infect', 'immune system', 'lymphocyte',
                                          'b cell', 't cell', 'white blood', 'infection']):
         return GOLDEN_EXAMPLE_VACCINE
-    
-    # PRIORITY 2: Cellular Processes (GOLDEN_EXAMPLE_RESPIRATION)
-    elif any(kw in topic_lower for kw in ['respiration', 'atp', 'mitochondria', 'glucose', 
-                                           'glycolysis', 'krebs', 'electron transport', 
+
+    # PRIORITY 2: Cellular Processes
+    elif any(kw in topic_lower for kw in ['respiration', 'atp', 'mitochondria', 'glucose',
+                                           'glycolysis', 'krebs', 'electron transport',
                                            'photosynthesis', 'chloroplast', 'metabolism']):
         return GOLDEN_EXAMPLE_RESPIRATION
-    
-    # PRIORITY 3: Nuclear/Stellar Physics (GOLDEN_EXAMPLE_FUSION)
-    elif any(kw in topic_lower for kw in ['fusion', 'star', 'nuclear', 'sun', 'hydrogen', 
-                                           'helium', 'proton', 'fission', 'radioactiv']):
-        return GOLDEN_EXAMPLE_FUSION
-    
-    # FALLBACK by subject area
-    elif any(kw in topic_lower for kw in ['biology', 'cell', 'dna', 'mitos', 'bacteria', 
-                                           'enzyme', 'protein', 'digestion', 'blood', 
-                                           'heart', 'nerve', 'brain', 'organ']):
-        return GOLDEN_EXAMPLE_RESPIRATION  # Biology → Respiration template
-    
-    elif any(kw in topic_lower for kw in ['physics', 'motion', 'force', 'wave', 'oscillat', 
-                                           'pendulum', 'space', 'astronomy', 'energy', 
-                                           'electric', 'magnet', 'circuit', 'light']):
-        return GOLDEN_EXAMPLE_FUSION  # Physics → Fusion template
-    
-    elif any(kw in topic_lower for kw in ['chemistry', 'bond', 'molecule', 'atom', 'reaction', 
-                                           'ionic', 'covalent', 'acid', 'base', 'ph', 
+
+    # PRIORITY 3: Stars / Astronomy / Lifecycle / Cycle diagrams
+    elif any(kw in topic_lower for kw in ['star', 'nebula', 'galaxy', 'astrono', 'cosmos',
+                                           'solar', 'lifecycle', 'life cycle', 'cycle',
+                                           'nuclear', 'fusion', 'fission', 'radioactiv',
+                                           'sun', 'hydrogen', 'helium', 'proton']):
+        return GOLDEN_EXAMPLE_STAR  # Best cinematic example for visual richness
+
+    # PRIORITY 4: Physics (waves, forces, motion)
+    elif any(kw in topic_lower for kw in ['physics', 'motion', 'force', 'wave', 'oscillat',
+                                           'pendulum', 'space', 'energy', 'electric',
+                                           'magnet', 'circuit', 'light', 'optic']):
+        return GOLDEN_EXAMPLE_STAR  # Star example demos particle/transform patterns well
+
+    # PRIORITY 5: Biology (cells, organs, processes)
+    elif any(kw in topic_lower for kw in ['biology', 'cell', 'dna', 'mitos', 'bacteria',
+                                           'enzyme', 'protein', 'digestion', 'blood',
+                                           'heart', 'nerve', 'brain', 'organ', 'meiosis',
+                                           'genetics', 'mendel', 'chromosome']):
+        return GOLDEN_EXAMPLE_RESPIRATION  # Biochem process → Respiration template
+
+    # PRIORITY 6: Chemistry
+    elif any(kw in topic_lower for kw in ['chemistry', 'bond', 'molecule', 'atom', 'reaction',
+                                           'ionic', 'covalent', 'acid', 'base', 'ph',
                                            'oxidation', 'reduction', 'electrolysis']):
-        return GOLDEN_EXAMPLE_FUSION  # Chemistry → Fusion template
-    
-    elif any(kw in topic_lower for kw in ['math', 'quadrat', 'function', 'graph', 'equation', 
+        return GOLDEN_EXAMPLE_STAR  # Fusion example covers A + B → C reactions
+
+    # PRIORITY 7: Math
+    elif any(kw in topic_lower for kw in ['math', 'quadrat', 'function', 'graph', 'equation',
                                            'calculus', 'trigonometry', 'algebra', 'geometry']):
         return EXAMPLE_MATH_QUADRATIC
-    
+
     else:
-        return GOLDEN_EXAMPLE_VACCINE  # Default to newest high-quality example
+        # DEFAULT: Star lifecycle — richest visuals, best cinematic template
+        return GOLDEN_EXAMPLE_STAR

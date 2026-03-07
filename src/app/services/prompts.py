@@ -197,62 +197,171 @@ OVERLAP PREVENTION RULES (CRITICAL):
 TOPIC-SPECIFIC VISUAL REQUIREMENTS
 ═══════════════════════════════════════════════════════════════════════════════
 
-GENETICS: Punnett square 2x2 grid, pea plants as colored circles
-CELL BIOLOGY: Cell membrane as circle, organelles with distinct shapes
-CHEMISTRY: Atoms as colored spheres, molecular structures with bond lines
-PHYSICS: Force vectors as arrows, wave diagrams with amplitude marked
+ASTRONOMY/STARS:  Procedural 50-dot nebula cloud, GrowArrow cycle, split-screen fates
+GENETICS:         Punnett square 2x2 grid, pea plants as colored circles, 3:1 ratio box
+CELL BIOLOGY:     Cell membrane circle + organelle shapes, particle cloud for molecules
+CHEMISTRY:        Atoms as colored spheres, A+B→C with Flash, concentric rings for energy
+PHYSICS/WAVES:    Arrows for vectors, concentric rings for waves/pulses
+WATER CYCLE:      Rising blue dots for vapor, cloud cluster, falling lines for rain
 
 ═══════════════════════════════════════════════════════════════════════════════
+CINEMATIC ACTION SYNTAX — USE THESE EXACT PATTERNS IN EVERY actions[] ARRAY
+═══════════════════════════════════════════════════════════════════════════════
 
-Return JSON:
+❌  GENERIC (BANNED — produces boring static output):
+    "Create nebula_object with GrowFromCenter"
+    "Transform or animate protostar formation"
+    "Create structure (Circle/Ellipse)"
+
+✅  CINEMATIC (REQUIRED — be this specific):
+    "nebula_cloud = VGroup(); [50 Dots with random pos/size/color]; LaggedStart(FadeIn each dot, lag_ratio=0.03)"
+    "self.play(nebula_cloud.animate.scale(0.25), run_time=2)  # gravity collapse"
+    "protostar = Circle(radius=0.5, color=Colors.ORANGE, fill_opacity=0.9); ReplacementTransform(nebula_cloud, protostar)"
+    "h1 = VGroup(Circle+Text('H')).move_to(LEFT*2); h2 = VGroup(Circle+Text('H')).move_to(RIGHT*2)"
+    "self.play(h1.animate.move_to(LEFT*0.35), h2.animate.move_to(RIGHT*0.35))  # collision"
+    "Flash(ORIGIN, color=Colors.GOLD, line_length=0.7, num_lines=14)  # fusion flash"
+    "he = VGroup(Circle+Text('He')); ReplacementTransform(VGroup(h1,h2), he)  # product morph"
+    "divider = Line(UP*3.2, DOWN*3.2); Write(left_title at LEFT*3.2+UP*2.5, right_title at RIGHT*3.2+UP*2.5)"
+    "rings = VGroup(*[Circle(radius=0.3+i*0.3) for i in range(4)]); LaggedStart(Create each ring, lag_ratio=0.25)"
+    "stage_dots cycle diagram: 5 Dots at circle positions, GrowArrow between each pair"
+    "LaggedStart(*[FadeIn(item, shift=RIGHT) for item in items], lag_ratio=0.3)"
+
+ALWAYS specify: object names, colors, positions (LEFT/RIGHT/UP*N), animation method, lag_ratio
+
+═══════════════════════════════════════════════════════════════════════════════
+REFERENCE PLAN (Star Life Cycle — copy this level of specificity!)
+═══════════════════════════════════════════════════════════════════════════════
+
+{{
+  "total_duration": 60,
+  "timeline": [
+    {{
+      "scene": 1, "name": "Introduction", "duration": 6,
+      "actions": [
+        "title_group = self.show_title('Life Cycle of a Star')",
+        "self.play_caption('From a nebula of gas to a glowing star')",
+        "FadeOut title_group after 1s wait"
+      ],
+      "layout": "Title at TOP"
+    }},
+    {{
+      "scene": 2, "name": "Nebula — Particle Cloud", "duration": 14,
+      "actions": [
+        "nebula_cloud = VGroup() with 50 Dot objects: random r=uniform(0.5,2.5), theta, x=r*cos(theta), y=r*sin(theta), radius=uniform(0.03,0.1), color=choice([Colors.PURPLE,Colors.CYAN,Colors.HOT_PINK]), opacity=uniform(0.3,0.8)",
+        "LaggedStart(*[FadeIn(dot, scale=0.5) for dot in nebula_cloud], lag_ratio=0.03, run_time=2)",
+        "nebula_label = Text('Nebula',font_size=20,color=Colors.BRIGHT_YELLOW).to_edge(DOWN,buff=0.8); Write(nebula_label)",
+        "self.play_caption('Stars are born inside massive nebulae')",
+        "self.play(nebula_cloud.animate.scale(0.25), run_time=2)  # gravity collapse",
+        "self.play_caption('Gravity pulls the cloud inward')"
+      ],
+      "layout": "Particle cloud at CENTER, label at BOTTOM edge"
+    }},
+    {{
+      "scene": 3, "name": "Protostar — ReplacementTransform Morph", "duration": 10,
+      "actions": [
+        "protostar = VGroup(Circle(radius=0.8,color=Colors.ORANGE,stroke=Colors.BRIGHT_YELLOW,stroke_width=6,fill_opacity=0.0), Circle(radius=0.5,color=Colors.ORANGE,fill_opacity=0.9))",
+        "ReplacementTransform(nebula_cloud, protostar, run_time=1.5)  # MORPH not FadeOut+FadeIn",
+        "proto_label = Text('Protostar',font_size=20).next_to(protostar,DOWN,buff=0.4); Write(proto_label)",
+        "self.add_glow_pulse(protostar[1], Colors.ORANGE)",
+        "self.play_caption('Gravitational collapse creates a Protostar')"
+      ],
+      "layout": "Protostar at CENTER, label BELOW"
+    }},
+    {{
+      "scene": 4, "name": "Nuclear Fusion — H+H→He with Flash", "duration": 12,
+      "actions": [
+        "FadeOut protostar, proto_label",
+        "fusion_title = Text('Nuclear Fusion!',font_size=26,color=Colors.GOLD,weight=BOLD).to_edge(UP,buff=0.5); Write(fusion_title)",
+        "h1 = VGroup(Circle(r=0.3,color=Colors.CYAN,fill_opacity=0.8).move_to(LEFT*2), Text('H',font_size=22).move_to(LEFT*2))",
+        "h2 = VGroup(Circle(r=0.3,color=Colors.CYAN,fill_opacity=0.8).move_to(RIGHT*2), Text('H',font_size=22).move_to(RIGHT*2))",
+        "GrowFromCenter(h1), GrowFromCenter(h2)",
+        "self.play_caption('Two hydrogen nuclei collide at extreme pressure')",
+        "self.play(h1.animate.move_to(LEFT*0.35), h2.animate.move_to(RIGHT*0.35), run_time=1.0)",
+        "Flash(ORIGIN, color=Colors.GOLD, line_length=0.7, num_lines=14)",
+        "he = VGroup(Circle(r=0.45,color=Colors.GOLD,fill_opacity=0.9,stroke=Colors.BRIGHT_YELLOW,stroke_width=4), Text('He',font_size=22)); ReplacementTransform(VGroup(h1,h2), he)",
+        "energy_txt = Text('+ 26.7 MeV released!',font_size=20,color=Colors.GOLD).next_to(he,DOWN,buff=0.5); Write(energy_txt)",
+        "self.play_caption('4H → He releases enormous energy (E=mc²)')"
+      ],
+      "layout": "H atoms at x=±2, ORIGIN for fusion, He at CENTER"
+    }},
+    {{
+      "scene": 5, "name": "Split-Screen — Two Stellar Fates", "duration": 10,
+      "actions": [
+        "FadeOut all previous",
+        "divider = Line(UP*3.2, DOWN*3.2, color=WHITE, stroke_opacity=0.4); Create(divider)",
+        "low_hdr = Text('Low Mass Star',font_size=18,color=Colors.CYAN,weight=BOLD).move_to(LEFT*3.2+UP*2.5); Write(low_hdr)",
+        "high_hdr = Text('High Mass Star',font_size=18,color=Colors.RED,weight=BOLD).move_to(RIGHT*3.2+UP*2.5); Write(high_hdr)",
+        "low_star = Circle(r=0.5,color=Colors.BRIGHT_YELLOW,fill_opacity=0.7).move_to(LEFT*3.2+UP*1); GrowFromCenter(low_star)",
+        "GrowArrow from low_star down to white_dwarf = Circle(r=0.3,color=Colors.CYAN)",
+        "high_star = Circle(r=0.7,color=Colors.RED,fill_opacity=0.7).move_to(RIGHT*3.2+UP*1); GrowFromCenter(high_star)",
+        "rings = VGroup(*[Circle(radius=0.3+i*0.3, color=Colors.ORANGE, stroke_opacity=max(0.05,0.7-i*0.2)) for i in range(4)]).next_to(high_arrow,DOWN)",
+        "LaggedStart(*[Create(r) for r in rings], lag_ratio=0.25)  # supernova shock wave",
+        "self.play_caption('Mass determines the stellar fate')"
+      ],
+      "layout": "Left panel x=-3.2, right panel x=+3.2, divider at x=0"
+    }},
+    {{
+      "scene": 6, "name": "Circular Cycle Diagram — Takeaway", "duration": 8,
+      "actions": [
+        "FadeOut all previous",
+        "cycle_title = Text('The Stellar Lifecycle',font_size=26,color=Colors.GOLD,weight=BOLD).to_edge(UP,buff=0.5); Write(cycle_title)",
+        "stages = ['Nebula','Protostar','Main Seq','Giant','Remnant']; stage_colors = [Colors.PURPLE,Colors.ORANGE,Colors.BRIGHT_YELLOW,Colors.RED,Colors.CYAN]",
+        "For each stage i: angle=-PI/2+i*2*PI/5; pos=2.0*[cos(angle),sin(angle),0]; Dot(r=0.28,color=col).move_to(pos); Text(name,font_size=14,color=col).move_to(pos*1.45)",
+        "LaggedStart(*[GrowFromCenter(dot) for dot in stage_dots], lag_ratio=0.2)",
+        "LaggedStart(*[Write(lbl) for lbl in stage_labels], lag_ratio=0.2)",
+        "For each pair (i → i+1 %5): GrowArrow(Arrow(stage_dots[i], stage_dots[i+1], buff=0.3, color=WHITE, stroke_opacity=0.6))",
+        "self.play_caption('Key Point: Stars are recycled — nebula to remnant')"
+      ],
+      "layout": "Cycle diagram at CENTER, title at TOP"
+    }}
+  ]
+}}
+
+Return JSON matching this exact structure — with this level of cinematic specificity in every actions[] array:
 {{
   "total_duration": {duration},
   "timeline": [
     {{
       "scene": 1,
       "name": "Introduction",
-      "duration": 5,
+      "duration": 6,
       "actions": [
-        "self.show_title('Topic Name')",
+        "title_group = self.show_title('Short Title')",
         "self.play_caption('In this video: ...')",
-        "Create main_object with GrowFromCenter",
-        "FadeOut title"
+        "FadeOut title_group after wait(1)"
       ],
-      "layout": "Title at TOP (y=3), main object at CENTER (y=0)"
+      "layout": "Title at TOP"
     }},
     {{
       "scene": 2,
-      "name": "Core Concept",
-      "duration": 12,
+      "name": "Core Concept 1 — [Cinematic technique name]",
+      "duration": 14,
       "actions": [
-        "Create structure (Circle/Ellipse)",
-        "label = Text('Name').next_to(structure, DOWN, buff=0.3)",
-        "Write(label)",
-        "self.play_caption('Explanation')",
-        "Transform or animate"
+        "object_name = VGroup/Circle/etc with SPECIFIC color, size, position",
+        "SPECIFIC animation: LaggedStart / ReplacementTransform / Flash / GrowArrow",
+        "label = Text('Exact Label Text', font_size=20, color=Colors.BRIGHT_YELLOW).next_to(obj, DOWN, buff=0.3); Write(label)",
+        "self.play_caption('Specific explanation under 50 chars')"
       ],
-      "layout": "Main object CENTER, label BELOW at y=-1.5, caption at BOTTOM"
+      "layout": "Specific positions: x=LEFT*2, y=UP*1, etc."
     }},
     {{
       "scene": 3,
-      "name": "Process/Reaction",
+      "name": "Core Concept 2 — [Cinematic technique name]",
       "duration": 12,
       "actions": [
-        "Create reactants LEFT side",
-        "Create arrow CENTER",
-        "ReplacementTransform to products RIGHT side",
-        "Flash for energy",
-        "self.play_caption('Process explanation')"
+        "FadeOut previous named objects",
+        "SPECIFIC animation sequence with named objects",
+        "self.play_caption('Specific explanation')"
       ],
-      "layout": "Reactants at x=-3, Arrow at x=0, Products at x=3"
+      "layout": "Specific layout description"
     }},
     {{
       "scene": 4,
       "name": "Takeaway",
       "duration": 6,
       "actions": [
-        "FadeOut previous objects",
-        "Write equation or summary",
+        "FadeOut(*self.mobjects)",
+        "Write key point text or cycle diagram",
         "self.play_caption('Key Point: ...')"
       ],
       "layout": "Summary at CENTER"
@@ -395,15 +504,102 @@ COLOR MEANINGS (Use purposefully!)
 - WHITE = Labels and text
 
 ═══════════════════════════════════════════════════════════════════════════════
+CINEMATIC TECHNIQUES — MANDATORY FOR 3BLUE1BROWN QUALITY (USE THESE!)
+═══════════════════════════════════════════════════════════════════════════════
+
+**A. PROCEDURAL PARTICLE CLOUD (for nebulae, plasma, gas, fluids):**
+nebula_cloud = VGroup()
+for _ in range(50):                        # 30-80 dots → never boring static shapes
+    r = random.uniform(0.5, 2.5)
+    theta = random.uniform(0, 2 * PI)
+    x = r * np.cos(theta) * random.uniform(0.8, 1.2)
+    y = r * np.sin(theta) * random.uniform(0.6, 1.0)
+    dot = Dot(radius=random.uniform(0.03, 0.10),
+              color=random.choice([Colors.PURPLE, Colors.CYAN, Colors.HOT_PINK]))
+    dot.move_to([x, y, 0])
+    dot.set_opacity(random.uniform(0.3, 0.8))
+    nebula_cloud.add(dot)
+self.play(LaggedStart(*[FadeIn(d, scale=0.5) for d in nebula_cloud], lag_ratio=0.03), run_time=2)
+
+**B. GRAVITY COLLAPSE (cloud contracts; then MORPH into solid object):**
+self.play(nebula_cloud.animate.scale(0.25), run_time=2)          # CONTRACT
+protostar = Circle(radius=0.5, color=Colors.ORANGE, fill_opacity=0.9)
+self.play(ReplacementTransform(nebula_cloud, protostar), run_time=1.5)  # MORPH
+
+**C. STAGE TRANSFORMATION — ReplacementTransform (objects MORPH, never just disappear):**
+# WRONG (boring): self.play(FadeOut(old)); self.play(FadeIn(new))
+# RIGHT (cinematic): 
+self.play(ReplacementTransform(nebula, protostar), run_time=1.2)
+self.play(ReplacementTransform(protostar, main_star), run_time=1.2)
+
+**D. CHEMICAL / NUCLEAR REACTION (A + B → C with Flash):**
+a = VGroup(Circle(radius=0.3, color=Colors.CYAN, fill_opacity=0.8).move_to(LEFT*2),
+           Text("H", font_size=20, color=WHITE).move_to(LEFT*2))
+b = VGroup(Circle(radius=0.3, color=Colors.CYAN, fill_opacity=0.8).move_to(RIGHT*2),
+           Text("H", font_size=20, color=WHITE).move_to(RIGHT*2))
+self.play(GrowFromCenter(a), GrowFromCenter(b))
+self.play(a.animate.move_to(LEFT*0.35), b.animate.move_to(RIGHT*0.35))
+self.play(Flash(ORIGIN, color=Colors.GOLD, line_length=0.7, num_lines=14))
+product = VGroup(Circle(radius=0.45, color=Colors.GOLD, fill_opacity=0.9),
+                 Text("He", font_size=20, color=WHITE))
+self.play(ReplacementTransform(VGroup(a, b), product))
+
+**E. SPLIT-SCREEN DUAL PATHS (two simultaneous processes):**
+divider = Line(UP * 3.2, DOWN * 3.2, color=WHITE, stroke_opacity=0.4)
+self.play(Create(divider))
+left_title = Text("Path A", font_size=18, color=Colors.CYAN).move_to(LEFT*3.2 + UP*2.5)
+right_title = Text("Path B", font_size=18, color=Colors.RED).move_to(RIGHT*3.2 + UP*2.5)
+self.play(Write(left_title), Write(right_title))
+# Add left objects at x=-3.2, right objects at x=+3.2
+
+**F. CIRCULAR CYCLE DIAGRAM (with LaggedStart + GrowArrow):**
+stages = ["Stage A", "Stage B", "Stage C", "Stage D"]
+stage_colors = [Colors.CYAN, Colors.ORANGE, Colors.PURPLE, Colors.RED]
+cycle_r = 2.0
+stage_dots = VGroup()
+stage_labels = VGroup()
+for i, (name, col) in enumerate(zip(stages, stage_colors)):
+    angle = -PI/2 + i * 2*PI / len(stages)
+    pos = cycle_r * np.array([np.cos(angle), np.sin(angle), 0])
+    dot = Dot(radius=0.28, color=col).move_to(pos)
+    stage_dots.add(dot)
+    lbl = Text(name, font_size=14, color=col).move_to(pos * 1.45)
+    stage_labels.add(lbl)
+self.play(LaggedStart(*[GrowFromCenter(d) for d in stage_dots], lag_ratio=0.2))
+self.play(LaggedStart(*[Write(l) for l in stage_labels], lag_ratio=0.2))
+for i in range(len(stages)):
+    arr = Arrow(stage_dots[i].get_center(), stage_dots[(i+1)%len(stages)].get_center(),
+               buff=0.3, color=WHITE, stroke_opacity=0.6)
+    self.play(GrowArrow(arr), run_time=0.3)
+
+**G. CONCENTRIC SHOCK RINGS (explosion / energy pulse):**
+rings = VGroup(*[
+    Circle(radius=0.3 + i*0.35, color=Colors.ORANGE, stroke_opacity=max(0.05, 0.7 - i*0.18))
+    for i in range(5)
+])
+rings.move_to(ORIGIN)
+self.play(LaggedStart(*[Create(r) for r in rings], lag_ratio=0.25))
+
+**H. ROTATING OBJECT (for spinning things — neutron star, electron, gear):**
+obj = VGroup(Line(ORIGIN, RIGHT*0.8, color=Colors.CYAN),
+             Line(ORIGIN, LEFT*0.8, color=Colors.CYAN))
+for _ in range(3):
+    self.play(Rotate(obj, angle=PI, about_point=obj.get_center()), run_time=0.4)
+
+**I. LAGGED START FOR SEQUENTIAL REVEALS (any list of objects):**
+items = [Text(f"Step {i+1}", font_size=20, color=Colors.CYAN)
+         .move_to(UP*(1.5 - i*1.0)) for i in range(4)]
+self.play(LaggedStart(*[FadeIn(item, shift=RIGHT) for item in items], lag_ratio=0.3))
+
+═══════════════════════════════════════════════════════════════════════════════
 BANNED PATTERNS (NEVER DO THESE!)
 ═══════════════════════════════════════════════════════════════════════════════
 
-- for _ in range(50): ...          (NO mass spawning)
-- VGroup(*[Dot() for _ in range(20)])  (NO particle spam)
-- font_size > 36                   (TOO BIG)
 - MathTex, Tex, Matrix             (NO LATEX - user doesn't have it)
 - SVGMobject, ImageMobject         (NO external assets)
 - ZoomIn, ZoomOut, SlideIn, etc.   (hallucinated animations - cause NameError)
+- font_size > 44                   (TOO BIG)
+- Literal newline inside string    (SYNTAX ERROR - use \\n escape instead)
 
 ═══════════════════════════════════════════════════════════════════════════════
 SCREEN BOUNDS (Strict!)
@@ -505,59 +701,89 @@ CRITICAL RULES - VIOLATION MEANS FAILURE:
    import numpy as np
 3. FORBIDDEN: os, sys, subprocess, eval, exec, open, __import__, file I/O, network
 4. STRICTLY FORBIDDEN (LATEX): MathTex, Tex, DecimalNumber, Matrix. USER DOES NOT HAVE LATEX.
-5. USE INSTEAD: Text for everything.
+5. USE INSTEAD: Text() for ALL mathematical expressions.
 6. Class MUST be named GeneratedScene inheriting from ColorfulScene (from template)
-7. NO top-level code (e.g., self.wait()) outside methods.
+7. NO top-level code outside methods.
 8. USE self.play_caption("text") for ALL captions.
+
+═══════════════════════════════════════════════════════════════════════════════
+CINEMATIC MANDATE — YOU MUST USE THESE TECHNIQUES (not just circles + labels):
+═══════════════════════════════════════════════════════════════════════════════
+
+For ANY topic involving particles, gas, fluid, cells, atoms, electrons:
+→ Use PROCEDURAL LOOPS (30-80 objects) with LaggedStart, NOT single static shapes:
+   cloud = VGroup()
+   for _ in range(50):
+       dot = Dot(radius=random.uniform(0.03, 0.1),
+                 color=random.choice([Colors.CYAN, Colors.PURPLE, Colors.HOT_PINK]))
+       dot.move_to([random.uniform(-2.5,2.5), random.uniform(-1.5,1.5), 0])
+       dot.set_opacity(random.uniform(0.3, 0.8))
+       cloud.add(dot)
+   self.play(LaggedStart(*[FadeIn(d, scale=0.5) for d in cloud], lag_ratio=0.03), run_time=2)
+
+For state changes (gas→liquid, nebula→star, molecule→product):
+→ MORPH with ReplacementTransform (NEVER just FadeOut+FadeIn):
+   self.play(ReplacementTransform(old_object, new_object), run_time=1.5)
+
+For chemical/nuclear reactions:
+→ Bring reactants together → Flash → ReplacementTransform into product:
+   self.play(a.animate.move_to(LEFT*0.35), b.animate.move_to(RIGHT*0.35))
+   self.play(Flash(ORIGIN, color=Colors.GOLD, line_length=0.7, num_lines=14))
+   self.play(ReplacementTransform(VGroup(a, b), product))
+
+For explosions/shockwaves/energy pulses:
+→ Concentric rings with LaggedStart:
+   rings = VGroup(*[Circle(radius=0.3+i*0.35, color=Colors.ORANGE,
+                   stroke_opacity=max(0.05, 0.7-i*0.18)) for i in range(5)])
+   self.play(LaggedStart(*[Create(r) for r in rings], lag_ratio=0.25))
+
+For comparing two paths/processes simultaneously:
+→ Split-screen with divider line:
+   divider = Line(UP*3.2, DOWN*3.2, color=WHITE, stroke_opacity=0.4)
+   left_title.move_to(LEFT*3.2 + UP*2.5); right_title.move_to(RIGHT*3.2 + UP*2.5)
+
+For cycles/processes that repeat:
+→ Circular cycle diagram with GrowArrow between stage dots:
+   for i in range(len(stages)):
+       angle = -PI/2 + i * 2*PI/len(stages)
+       pos = 2.0 * np.array([np.cos(angle), np.sin(angle), 0])
+
+For sequential reveals (steps, lists, stages):
+→ LaggedStart with shift:
+   self.play(LaggedStart(*[FadeIn(item, shift=RIGHT) for item in items], lag_ratio=0.3))
+
+═══════════════════════════════════════════════════════════════════════════════
 
 MANDATORY ColorfulScene METHODS (ALWAYS USE — NEVER use the raw equivalents):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  self.show_title("Title Text")
-      → Renders a gradient title with underline. USE THIS for EVERY scene title.
-      ✗ WRONG: title = Text("Photosynthesis"); self.play(Write(title))
-      ✓ RIGHT: self.show_title("Photosynthesis")
-
-  self.play_caption("Explanation under 60 chars")
-      → Shows a caption box at screen bottom for 2.5 s. USE THIS for all explanations.
-      ✗ WRONG: cap = Text("...").to_edge(DOWN); self.play(Write(cap))
-      ✓ RIGHT: self.play_caption("ATP is the energy currency of cells")
-
-  self.add_glow_pulse(obj, COLOR)
-      → Pulsing glow highlight on any mobject. Use to emphasize key objects.
-      ✓ EXAMPLE: self.add_glow_pulse(nucleus, CYAN)
-
-  self.create_labeled_shape(shape, "Label", DOWN)
-      → Shape + non-overlapping label. Use instead of manual .next_to(label, ...).
-      ✓ EXAMPLE: atom = self.create_labeled_shape(Circle(radius=0.5, color=CYAN), "Atom", DOWN)
-
-  self.show_key_point("Key fact for exam")
-      → Highlighted gold box. Use at takeaway / conclusion scenes.
-
-  self.add_wiggle_effect(obj)
-      → Wiggle/vibrate animation. Use for "excited" or "active" objects.
+  self.show_title("Title Text")      → gradient title. USE for EVERY scene start.
+  self.play_caption("text")          → caption box at bottom. USE for all narration.
+  self.add_glow_pulse(obj, COLOR)    → pulsing glow highlight on key objects.
+  self.show_key_point("Exam fact")   → gold box at takeaway.
+  self.add_wiggle_effect(obj)        → vibrate animation for "active" objects.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SCREEN BOUNDS - CRITICAL (Manim screen is 14.2 x 8 units):
-- MAX text width: 12 units. Use font_size=22 for captions, font_size=36 for titles.
-- MAX caption length: 60 characters. Wrap with textwrap.fill(text, width=40).
-- SAFE positioning: X from -6 to 6, Y from -3.5 to 3.5
-- NEVER use .shift(UP * 4) or .shift(DOWN * 4) - use .to_edge(UP/DOWN, buff=0.5)
-- NEVER use font_size > 44 for any text
+- SAFE: X from -6 to 6, Y from -3.5 to 3.5
+- NEVER .shift(UP*4) or .shift(DOWN*4) — use .to_edge(UP/DOWN, buff=0.5)
+- font_size MAX 44, MIN 14. Captions: 22. Titles: 36.
+- MAX caption length: 60 characters. Break long text with \\n.
 
-BANNED ANIMATIONS (DO NOT USE - THEY DON'T EXIST IN MANIM):
-- ZoomIn, ZoomOut, Zoom, SlideIn, SlideOut, PopIn, PopOut, Emerge, Expand, Collapse
-- Morph (use Transform/ReplacementTransform), ShowCreation (use Create)
+BANNED ANIMATIONS (CAUSE NameError — DO NOT USE):
+- ZoomIn, ZoomOut, Zoom, SlideIn, SlideOut, PopIn, Emerge, Expand, Collapse
+- ShowCreation (use Create), Morph (use Transform/ReplacementTransform)
 
-CRITICAL STRING RULES (PREVENTS SYNTAX ERRORS):
-- NEVER break a string literal across two lines. All strings on ONE line.
-  ✗ WRONG: self.play_caption("This text
-      continues here")
-  ✓ RIGHT: self.play_caption("This text continues here")
-- For line breaks inside strings, use \\n escape: Text("Line 1\\nLine 2")
-- Max string length in any Text() or play_caption(): 60 characters
+BANNED IMPORTS / OBJECTS:
+- MathTex, Tex, Matrix (NO LATEX)
+- SVGMobject, ImageMobject (no assets on disk)
+
+CRITICAL STRING RULES:
+- NEVER break a string literal across two lines (use \\n inside strings instead)
+- Max 60 chars per play_caption() string
 
 VALID ANIMATIONS: FadeIn, FadeOut, Write, Create, GrowFromCenter, ShrinkToCenter,
-Transform, ReplacementTransform, Flash, Wiggle, Indicate, LaggedStart, AnimationGroup
+Transform, ReplacementTransform, Flash, Wiggle, Indicate, LaggedStart, AnimationGroup,
+GrowArrow, Rotate, Succession
 
 OUTPUT: Start with from manim import *, then class GeneratedScene(ColorfulScene), then construct(self)"""
 
