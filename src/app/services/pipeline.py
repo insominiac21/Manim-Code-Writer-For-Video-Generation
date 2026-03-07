@@ -600,6 +600,12 @@ def _resolve_python_bin() -> str:
     return sys.executable or "python3"
 
 
+# Global render lock — prevents concurrent renders from starving each other on single CPU EC2
+import threading
+_RENDER_LOCK = threading.Lock()
+_RENDER_TIMEOUT = 360  # seconds per render attempt (raised from 240)
+
+
 def _try_render_direct(job_id: str, manim_file: Path) -> Optional[str]:
     """Try rendering using direct manim command."""
     try:
@@ -611,7 +617,7 @@ def _try_render_direct(job_id: str, manim_file: Path) -> Optional[str]:
         result = subprocess.run(
             [manim_bin, "-qh", str(manim_file), "GeneratedScene",
              "--media_dir", str(VIDEO_DIR / job_id), "--disable_caching"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=240,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=_RENDER_TIMEOUT,
             env=env
         )
         if result.returncode == 0:
@@ -640,7 +646,7 @@ def _try_render_python_module(job_id: str, manim_file: Path) -> Optional[str]:
         result = subprocess.run(
             [python_bin, "-m", "manim", "-qh", str(manim_file), "GeneratedScene",
              "--media_dir", str(VIDEO_DIR / job_id), "--disable_caching"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=240,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=_RENDER_TIMEOUT,
             env=env
         )
         if result.returncode == 0:
@@ -684,24 +690,27 @@ def _try_render_docker(job_id: str, manim_file: Path) -> Optional[str]:
 def render_video(job_id: str, manim_file: Path) -> Optional[str]:
     """
     Render Manim code to video.
+    Uses a global lock so concurrent jobs queue rather than compete for CPU.
     Tries multiple methods: direct manim, python -m manim, docker.
     """
-    print(f"[Render] Starting render for {job_id}...")
+    print(f"[Render] Waiting for render slot: {job_id}...")
+    with _RENDER_LOCK:
+        print(f"[Render] Starting render for {job_id}...")
 
-    video_url = _try_render_direct(job_id, manim_file)
-    if video_url:
-        return video_url
+        video_url = _try_render_direct(job_id, manim_file)
+        if video_url:
+            return video_url
 
-    video_url = _try_render_python_module(job_id, manim_file)
-    if video_url:
-        return video_url
+        video_url = _try_render_python_module(job_id, manim_file)
+        if video_url:
+            return video_url
 
-    video_url = _try_render_docker(job_id, manim_file)
-    if video_url:
-        return video_url
+        video_url = _try_render_docker(job_id, manim_file)
+        if video_url:
+            return video_url
 
-    print("[Render] All render methods failed. Video not generated.")
-    return None
+        print("[Render] All render methods failed. Video not generated.")
+        return None
 
 def _format_code(code: str) -> str:
     """Apply code formatting (optional, if black is available).
