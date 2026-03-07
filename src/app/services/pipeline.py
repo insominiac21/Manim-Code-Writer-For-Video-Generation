@@ -13,7 +13,7 @@ default_jobs = {}
 jobs = default_jobs
 
 # Output and media directories (update as needed)
-BASE_DIR = Path(os.getenv("BASE_DIR", Path(__file__).resolve().parents[4]))
+BASE_DIR = Path(os.getenv("BASE_DIR", Path(__file__).resolve().parents[3]))
 OUTPUT_DIR = BASE_DIR / "output"
 MANIM_DIR = OUTPUT_DIR / "manim"
 VIDEO_DIR = OUTPUT_DIR / "videos"
