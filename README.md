@@ -1,18 +1,34 @@
 
-# MentorBoxAI: Production-Grade Educational Video Engine
+# MentorBoxAI: AI Educational Video Engine
 
-MentorBoxAI is a robust FastAPI backend for generating professional 3Blue1Brown-style educational animations from a single text prompt. The system implements a 6-layer AI pipeline, **Groq LLM integration** (llama-3.3-70b-versatile) with automatic key rotation, and a modular `src/app` layout for scalability, reliability, and developer productivity.
+MentorBoxAI converts any topic into a 3Blue1Brown-style educational animation using a 6-layer AI pipeline. Type a concept, get a rendered 1080p MP4 — no animation experience needed.
+
+**Stack:** FastAPI · Groq (llama-3.3-70b-versatile) · Manim CE v0.19 · AWS EC2 (Ubuntu, ap-south-1)
 
 ---
 
-## 🚀 Key Features
-- **6-Layer AI Pipeline:** Understanding, Storyboarding, Verification, Code Generation, Refinement, Validation & Auto-Fix
-- **Groq LLM (llama-3.3-70b-versatile):** Fast inference with automatic key rotation across 3 API keys
-- **Zero-LaTeX Architecture:** Crash-proof, screen-safe visuals using only Text() objects
-- **Golden Few-Shot Prompting:** NEET/JEE quality Manim code with biology, physics, chemistry examples
-- **Self-Healing Logic:** AST-based static validation + runtime smoke test + Groq-powered auto-fix loop
-- **Production-Ready Structure:** Modular src/app layout, versioned API, Docker, scripts, and test coverage
-- **AWS Integration:** S3, DynamoDB, Lambda (ap-south-1 Mumbai) — Bedrock NOT used
+## AWS Services
+
+| Service | How it's used |
+| :--- | :--- |
+| **EC2** (ap-south-1 Mumbai) | Hosts the FastAPI server (port 8000) and runs the Manim renderer. All code generation and video rendering happens here. Manim requires Linux (Cairo, Pango, ffmpeg) — EC2 Ubuntu 22.04 provides this cleanly. |
+| **S3** (mentorbocai-videos) | Configured for video upload and CDN delivery. Credentials wired in `.env`. Not yet called in pipeline code — planned for next release. |
+| **DynamoDB** | Configured for persistent job history. Planned for next release. |
+| **Bedrock** | **Not used.** LLM inference moved to Groq for lower latency and free-tier availability. |
+
+### Why EC2 and not Lambda?
+Manim render jobs take 30–240 seconds and require persistent filesystem access (writing `.py` files, reading back `.mp4`). Lambda's 15-minute limit and ephemeral `/tmp` are unsuitable. EC2 gives full control over the rendering environment.
+
+---
+
+## Key Features
+- **6-Layer AI Pipeline:** Understanding → Storyboarding → Verification → Code Generation → Refinement → Validation & Auto-Fix
+- **Groq LLM (llama-3.3-70b-versatile):** Fast inference with 3-key round-robin rotation to avoid rate limits
+- **Zero-LaTeX:** All visuals use `Text()` — crash-proof on any Linux server, no TeX installation needed
+- **22 Template Helpers:** Pre-built `ColorfulScene` methods the LLM calls directly (phasor animation, particle physics, energy charts, collision bursts, layout zones)
+- **Golden Few-Shot Examples:** NEET/JEE quality examples for biology, physics, chemistry, and maths
+- **Self-Healing:** AST static check → subprocess smoke test → Groq-powered auto-patch before the user sees any error
+- **1080p Output:** All renders at `-qh` (1920×1080), 240s timeout
 
 ---
 
@@ -109,12 +125,13 @@ User Input (Topic, Duration)
 
 ---
 
-## 🛠️ Getting Started
+## Getting Started
 
 ### 1. Prerequisites
 - Python 3.10+
-- Manim Community Edition (with ffmpeg and sox)
-- AWS Account with Bedrock access (Claude 3 Sonnet)
+- Manim Community Edition v0.19+ with ffmpeg and sox (**Linux/WSL only** for rendering)
+- Groq API key (free at [console.groq.com](https://console.groq.com))
+- AWS account for EC2 deployment (optional for local dev)
 
 ### 2. Installation
 ```bash
@@ -122,42 +139,74 @@ pip install -r requirements.txt
 ```
 
 ### 3. Configuration
-- Copy `.env.example` to `.env` and add your AWS Bedrock credentials.
+Copy `.env.example` to `.env` and fill in:
+```env
+GROQ_API_KEY1=gsk_...
+GROQ_API_KEY2=gsk_...   # optional, for rate-limit rotation
+GROQ_API_KEY3=gsk_...   # optional
+AWS_REGION=ap-south-1
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+S3_BUCKET=mentorbocai-videos
+```
 
-### 4. Launch Backend
+### 4. Launch (EC2 / Linux)
+```bash
+cd /home/ubuntu/app
+venv/bin/uvicorn src.app.main:app --host 0.0.0.0 --port 8000
+```
+
+### 4. Launch (local dev — Windows, no rendering)
 ```powershell
-# Windows PowerShell
 .\run-local.ps1
 ```
-- Open browser at: [http://localhost:8000](http://localhost:8000)
+Open [http://localhost:8000](http://localhost:8000)
+
+> **Note:** Manim rendering only works on Linux. On Windows, code generation and pipeline layers work, but the render step will fail unless you have WSL with Manim installed.
 
 ---
 
-## 🤖 LLM Integration: AWS Bedrock
-- All LLM tasks use Amazon Bedrock (Claude 3 Sonnet recommended)
-- Configure region and model in `.env`
+## Generating a Video
+
+```bash
+curl -X POST http://<EC2_IP>:8000/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{"concept":"simple harmonic motion","goal":"explain for JEE","duration_seconds":60,"max_scenes":5,"auto_render":true}'
+```
+
+Poll for completion:
+```bash
+curl http://<EC2_IP>:8000/api/status/<job_id>
+```
 
 ---
 
-## 🎥 Rendering Videos (Manim)
-- Render scripts in `output/manim/` using Manim CLI
-- See README for quality flags and rendering options
+## LLM: Groq (not AWS Bedrock)
+All LLM calls go through **Groq** (`llama-3.3-70b-versatile`), not AWS Bedrock. Groq was chosen for:
+- **~10× lower latency** than Bedrock for this model size
+- Free tier sufficient for development and demo
+- Simple REST API with Python SDK
+
+The client (`groq_client.py`) rotates across up to 3 API keys to avoid per-key rate limits during heavy pipeline runs.
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 | Issue | Solution |
 |-------|----------|
-| NameError, ImportError | Validator auto-fixes most issues. Re-run generation. |
+| `NameError` / `ImportError` in render | Validator auto-fixes most issues. Re-run generation. |
 | Video too short | Increase `duration_seconds` |
-| Text overflow | Title max 25 chars, captions auto-wrapped |
-| Render fails on Windows | Use WSL for production renders |
+| Text overflow / overlap | Title max 25 chars, captions auto-wrapped at 40 chars |
+| Render fails | Must run on Linux (EC2/WSL). Windows render is not supported. |
+| Groq rate limit | Add a second/third API key to `.env` as `GROQ_API_KEY2`, `GROQ_API_KEY3` |
+| EC2 port 8000 unreachable | Check Security Group inbound rule: TCP 8000, source 0.0.0.0/0 |
 
 ---
 
-## 📚 Further Reading
-- See UPDATED_ARCHITECTURE.md for detailed design
-- See requirements.md and design.md for hackathon alignment and technical requirements
+## Further Reading
+- [UPDATED_ARCHITECTURE.md](UPDATED_ARCHITECTURE.md) — full pipeline and component map
+- [docs/design.md](docs/) — hackathon design rationale
+- [docs/requirements.md](docs/) — feature requirements
 
 ---
 
