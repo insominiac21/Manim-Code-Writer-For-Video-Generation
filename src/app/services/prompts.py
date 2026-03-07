@@ -200,9 +200,15 @@ TOPIC-SPECIFIC VISUAL REQUIREMENTS
 ASTRONOMY/STARS:  Procedural 50-dot nebula cloud, GrowArrow cycle, split-screen fates
 GENETICS:         Punnett square 2x2 grid, pea plants as colored circles, 3:1 ratio box
 CELL BIOLOGY:     Cell membrane circle + organelle shapes, particle cloud for molecules
-CHEMISTRY:        Atoms as colored spheres, A+B→C with Flash, concentric rings for energy
-PHYSICS/WAVES:    Arrows for vectors, concentric rings for waves/pulses
-WATER CYCLE:      Rising blue dots for vapor, cloud cluster, falling lines for rain
+CHEMISTRY/BONDS:  Atoms as colored spheres, A+B→C with Flash, MoveAlongPath electron transfer,
+                  Ellipse shared orbital, Rotate electron orbit, NumberLine with zones,
+                  comparison Table (ionic vs covalent, etc.)
+PHYSICS/WAVES:    FunctionGraph sine wave for E & B fields, spectrum VGroup of colored rects,
+                  concentric rings for pulses, Arrows for force vectors
+WATER CYCLE:      Sun (Circle+8 ray Lines) at top-right, rising vapor (vertical Lines),
+                  cloud (5 small Circles clustered), falling rain (10 Line strokes),
+                  Rectangle for water body / land / ocean
+ELECTRICITY:      Rotating Dot electrons in orbit (Rotate+about_point), arc transfer path
 
 ═══════════════════════════════════════════════════════════════════════════════
 CINEMATIC ACTION SYNTAX — USE THESE EXACT PATTERNS IN EVERY actions[] ARRAY
@@ -591,6 +597,79 @@ items = [Text(f"Step {i+1}", font_size=20, color=Colors.CYAN)
          .move_to(UP*(1.5 - i*1.0)) for i in range(4)]
 self.play(LaggedStart(*[FadeIn(item, shift=RIGHT) for item in items], lag_ratio=0.3))
 
+**J. SINE WAVE / EM WAVE (physics waves, oscillation):**
+e_wave = FunctionGraph(lambda x: np.sin(x*2)*1.5, x_range=[-3, 3], color=Colors.HOT_PINK)
+b_wave = FunctionGraph(lambda x: np.sin(x*2)*1.0, x_range=[-3, 3], color=Colors.CYAN)
+self.play(Create(e_wave), Create(b_wave))
+# Animate propagation shift:
+self.play(e_wave.animate.shift(RIGHT*1), b_wave.animate.shift(RIGHT*1), run_time=2, rate_func=linear)
+
+**K. ELECTRON TRANSFER ALONG ARC (ionic/covalent bonding):**
+# Electron moves from one atom to another along a curved path
+transfer_path = ArcBetweenPoints(na_electron.get_center(), cl_orbit.point_at_angle(7*PI/4), angle=-PI/2)
+self.play(MoveAlongPath(na_electron, transfer_path), run_time=1.5)
+
+**L. ORBITING ELECTRON (atoms, orbitals, electric fields):**
+orbit_ring = Circle(radius=1.2, color=Colors.CYAN, stroke_opacity=0.5).move_to(atom.get_center())
+e1 = Dot(color=Colors.CYAN).move_to(orbit_ring.point_at_angle(0))
+e2 = Dot(color=Colors.CYAN).move_to(orbit_ring.point_at_angle(PI))
+shared_orbit = Ellipse(width=2.5, height=1.5, color=Colors.CYAN).move_to(ORIGIN)
+self.play(
+    Rotate(e1, about_point=ORIGIN, angle=4*PI, run_time=4, rate_func=linear),
+    Rotate(e2, about_point=ORIGIN, angle=4*PI, run_time=4, rate_func=linear)
+)
+
+**M. ELECTROMAGNETIC SPECTRUM BAR (colored zones):**
+spectrum = VGroup()
+colors = [Colors.RED, Colors.ORANGE, Colors.BRIGHT_YELLOW, Colors.NEON_GREEN,
+          Colors.CYAN, Colors.PURPLE, Colors.HOT_PINK]
+for i, c in enumerate(colors):
+    rect = Rectangle(width=8/7, height=1, color=c, fill_opacity=0.8)
+    rect.move_to(LEFT*4 + RIGHT*(i*8/7 + 4/7))
+    rect.set_stroke(width=0)
+    spectrum.add(rect)
+self.play(FadeIn(spectrum))
+
+**N. COMPARISON TABLE (ionic vs covalent, aerobic vs anaerobic, etc.):**
+table = Table(
+    [["Transferred", "Shared"],
+     ["> 1.7", "< 1.7"],
+     ["High (Solids)", "Low (Gases)"],
+     ["Yes (Molten)", "No"]],
+    col_labels=[Text("Ionic"), Text("Covalent")],
+    row_labels=[Text("Electrons"), Text("EN Diff"), Text("Melting Pt"), Text("Conducts")],
+    include_outer_lines=True
+).scale(0.6)
+table.get_col_labels()[0].set_color(Colors.HOT_PINK)
+table.get_col_labels()[1].set_color(Colors.CYAN)
+self.play(Create(table))
+
+**O. SUN WITH RAYS (heat, energy, photosynthesis):**
+sun = Circle(radius=0.5, color=Colors.ORANGE, fill_opacity=0.8)
+sun_rays = VGroup()
+for i in range(8):
+    angle = i * PI / 4
+    ray = Line(ORIGIN, RIGHT * 1.0, color=Colors.ORANGE, stroke_width=3)
+    ray.rotate(angle, about_point=ORIGIN)
+    ray.shift(sun.get_center())
+    sun_rays.add(ray)
+sun_group = VGroup(sun, sun_rays).move_to(RIGHT*3 + UP*2)
+self.play(GrowFromCenter(sun_group))
+
+**P. NUMBERLINE WITH ZONES (for electronegativity, pH scale, spectra):**
+number_line = NumberLine(x_range=[0, 4, 1], length=10, color=Colors.WHITE,
+                         include_numbers=False).shift(DOWN*0.5)
+for val in [0, 1, 2, 3, 4]:
+    t = Text(str(val), font_size=20, color=Colors.WHITE)
+    t.next_to(number_line.number_to_point(val), DOWN, buff=0.2)
+    self.add(t)
+self.play(Create(number_line))
+# Zones:
+ionic_rect = Rectangle(width=5, height=1.5, color=Colors.HOT_PINK, fill_opacity=0.2)
+ionic_rect.move_to(number_line.number_to_point(2.85) + UP)
+ionic_label = Text("Zone Label", font_size=18, color=Colors.HOT_PINK).next_to(ionic_rect, UP)
+self.play(FadeIn(ionic_rect), Write(ionic_label))
+
 ═══════════════════════════════════════════════════════════════════════════════
 BANNED PATTERNS (NEVER DO THESE!)
 ═══════════════════════════════════════════════════════════════════════════════
@@ -752,6 +831,33 @@ For sequential reveals (steps, lists, stages):
 → LaggedStart with shift:
    self.play(LaggedStart(*[FadeIn(item, shift=RIGHT) for item in items], lag_ratio=0.3))
 
+For wave/oscillation topics (EM waves, sound, SHM):
+→ FunctionGraph sine wave:
+   e_wave = FunctionGraph(lambda x: np.sin(x*2)*1.5, x_range=[-3, 3], color=Colors.HOT_PINK)
+   self.play(Create(e_wave))
+   self.play(e_wave.animate.shift(RIGHT*1), run_time=2, rate_func=linear)  # propagation
+
+For electron/ion transfer (chemistry bonding):
+→ MoveAlongPath with ArcBetweenPoints:
+   path = ArcBetweenPoints(start_pos, end_pos, angle=-PI/2)
+   self.play(MoveAlongPath(electron_dot, path), run_time=1.5)
+
+For atomic orbitals / electron orbits:
+→ Rotate around a center point:
+   self.play(Rotate(electron, about_point=atom.get_center(), angle=2*PI, run_time=2, rate_func=linear))
+
+For scale/comparison topics (pH, electronegativity, spectra):
+→ NumberLine with manual Text labels + colored zone Rectangles:
+   nl = NumberLine(x_range=[0,4,1], length=10, include_numbers=False)
+   zone = Rectangle(width=4, height=1.5, color=Colors.CYAN, fill_opacity=0.2)
+
+For pros/cons or multi-property comparison:
+→ Table with col_labels and row_labels:
+   table = Table([["Val A", "Val B"], ["Val C", "Val D"]],
+                 col_labels=[Text("Option 1"), Text("Option 2")],
+                 row_labels=[Text("Property 1"), Text("Property 2")],
+                 include_outer_lines=True).scale(0.6)
+
 ═══════════════════════════════════════════════════════════════════════════════
 
 MANDATORY ColorfulScene METHODS (ALWAYS USE — NEVER use the raw equivalents):
@@ -783,7 +889,10 @@ CRITICAL STRING RULES:
 
 VALID ANIMATIONS: FadeIn, FadeOut, Write, Create, GrowFromCenter, ShrinkToCenter,
 Transform, ReplacementTransform, Flash, Wiggle, Indicate, LaggedStart, AnimationGroup,
-GrowArrow, Rotate, Succession
+GrowArrow, Rotate, Succession, MoveAlongPath
+
+VALID SPECIAL OBJECTS: FunctionGraph, NumberLine, ArcBetweenPoints, Table,
+Ellipse, VMobject, Brace, SurroundingRectangle
 
 OUTPUT: Start with from manim import *, then class GeneratedScene(ColorfulScene), then construct(self)"""
 
