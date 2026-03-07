@@ -86,10 +86,37 @@ def layer2_plan(understanding: dict, duration: int, max_scenes: int) -> dict:
         result = safe_json_loads(call_generator(prompt, expect_json=True))
         if "error" not in result:
             return result
-        if attempt_scenes == 2:
-            # All retries exhausted
-            return result
-    return result
+
+    # All LLM retries exhausted — use a hardcoded minimal fallback plan so video still generates.
+    # This is better than crashing with "Planning failed upstream".
+    concept_title = understanding.get("title", "Topic")
+    learning_obj  = understanding.get("learning_objective", f"Understand {concept_title}")
+    print(f"[Layer2] All retries failed. Using hardcoded fallback plan for '{concept_title}'")
+    return {
+        "total_duration": duration,
+        "timeline": [
+            {
+                "scene": 1,
+                "name": "Introduction",
+                "duration": duration // 2,
+                "actions": [
+                    f"title_group = self.show_title('{concept_title}')",
+                    "self.play_caption('Let us explore this concept step by step.')",
+                    "self.wait(2)"
+                ]
+            },
+            {
+                "scene": 2,
+                "name": "Key Concepts",
+                "duration": duration // 2,
+                "actions": [
+                    f"header = self.create_section_header('Key Points')",
+                    f"self.play_caption('{learning_obj[:80]}')",
+                    "self.wait(3)"
+                ]
+            }
+        ]
+    }
 def safe_json_loads(text: str) -> dict:
     """Robust JSON parsing with multiple fallback strategies to handle LLM artifacts."""
     if not text:
@@ -100,20 +127,34 @@ def safe_json_loads(text: str) -> dict:
     if stripped.startswith("HTTP 4") or stripped.startswith("HTTP 5"):
         raise RuntimeError(f"LLM API error: {stripped[:200]}")
 
-    # Detect truncation: JSON starts but never closes properly
+    # Detect truncation heuristic: try to rescue by finding last valid }
+    # NOTE: We intentionally skip the brace-count trick because Python code
+    # inside JSON string values contains { } chars that throw the counter off.
     stripped = stripped.lstrip()
-    if stripped.startswith('{') and stripped.count('{') > stripped.count('}'):
-        # Attempt to close any open arrays/objects so we get partial but parseable JSON
-        open_braces = stripped.count('{') - stripped.count('}')
+    if stripped.startswith('{'):
+        # Strategy 1: find the last top-level } and parse up to it
+        last_brace = stripped.rfind('}')
+        if last_brace > 0:
+            candidate = stripped[:last_brace + 1]
+            try:
+                result = json.loads(candidate, strict=False)
+                print("[JSON] Recovered by trimming to last closing brace")
+                return result
+            except Exception:
+                pass
+        # Strategy 2: strip trailing comma + close all unclosed brackets/braces
+        # Only reliable for short JSONs without embedded code; try as last resort
+        open_braces   = stripped.count('{') - stripped.count('}')
         open_brackets = stripped.count('[') - stripped.count(']')
-        padded = stripped.rstrip(',').rstrip()
-        padded += ']' * max(0, open_brackets) + '}' * max(0, open_braces)
-        try:
-            result = json.loads(padded, strict=False)
-            print(f"[JSON] Recovered truncated JSON ({open_braces} unclosed braces)")
-            return result
-        except Exception:
-            pass
+        if open_braces > 0:
+            padded = stripped.rstrip(',').rstrip()
+            padded += ']' * max(0, open_brackets) + '}' * max(0, open_braces)
+            try:
+                result = json.loads(padded, strict=False)
+                print(f"[JSON] Recovered truncated JSON ({open_braces} unclosed braces)")
+                return result
+            except Exception:
+                pass
 
     # Clean up common markdown block issues
     text = text.strip()
