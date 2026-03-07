@@ -122,12 +122,13 @@ def auto_fix_common_issues(source: str) -> str:
     fixed = re.sub(r'\.shift\(LEFT\s*\*\s*([7-9]|[1-9]\d)\)', '.shift(LEFT * 5)', fixed)
     fixed = re.sub(r'\.shift\(RIGHT\s*\*\s*([7-9]|[1-9]\d)\)', '.shift(RIGHT * 5)', fixed)
     
-    # 8. Reduce scale factors that are too large
-    fixed = re.sub(r'\.scale\(([2-9]\.\d|[1-9]\d)\)', '.scale(1.5)', fixed)
+    # 8. Reduce scale factors that are dangerously large (>= 4.0 only)
+    # Allow 2.0-3.9 for legitimate particle/zoom effects; only cap 4.0+ and integer multiples
+    fixed = re.sub(r'\.scale\(([4-9]\.\d|[1-9]\d)\)', '.scale(2.5)', fixed)
 
-    # 8b. Fix FadeOut(self.title, self.captions) -> FadeOut(*self.mobjects)
-    # self.title IS now set by show_title(), but if the LLM uses other undefined attrs, this is a safe fallback
-    fixed = re.sub(r'FadeOut\(self\.title[^)]*\)', 'FadeOut(*self.mobjects)', fixed)
+    # 8b. self.title and self.captions are now valid ColorfulScene attributes; preserve them.
+    # Only fix the truly unknown attrs (not title, captions).
+    fixed = re.sub(r'FadeOut\(self\.undefined_attr[^)]*\)', 'FadeOut(*self.mobjects)', fixed)
     
     # 9. Fix long text strings that will overflow (truncate to ~45 chars)
     def truncate_long_text(match):
@@ -164,10 +165,9 @@ def auto_fix_common_issues(source: str) -> str:
     fixed = re.sub(r'move_to\(UP\s*\*\s*([4-9]|[1-9]\d)\)', 'move_to(UP * 3)', fixed)
     fixed = re.sub(r'move_to\(DOWN\s*\*\s*([4-9]|[1-9]\d)\)', 'move_to(DOWN * 2.5)', fixed)
     
-    # 13. Fix labels placed to sides (force DOWN placement)
-    # Pattern: .next_to(obj, LEFT/RIGHT) -> .next_to(obj, DOWN)
-    # This prevents side labels from causing horizontal overflow
-    fixed = re.sub(r'\.next_to\(([^,]+),\s*(LEFT|RIGHT)\s*,', r'.next_to(\1, DOWN,', fixed)
+    # 13. (Removed) The blanket LEFT/RIGHT→DOWN override was incorrectly breaking
+    # split-screen layouts where left_panel.next_to(right_panel, RIGHT) is intentional.
+    # Layout enforcement is now handled by clamp_to_screen() in ColorfulScene.
     
     if fixes_applied:
         print(f"[Validator] Auto-fixed {len(fixes_applied)} issues: {', '.join(fixes_applied)}")

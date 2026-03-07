@@ -621,19 +621,24 @@ class ColorfulScene(Scene):
         return arrow
 
     def create_particle_group(self, num_particles=15, radius=0.3, color=Colors.CYAN):
-        """Create bouncing particle group for molecular effects."""
+        """Create a VGroup of particles for molecular/cloud effects. Safe screen bounds."""
         particles = VGroup()
         for _ in range(num_particles):
-            dot = Dot(radius=0.05, color=color)
-            dot.move_to([random.uniform(-6, 6), random.uniform(-3, 3), 0])
+            dot = Dot(radius=random.uniform(0.03, 0.09), color=color)
+            dot.set_opacity(random.uniform(0.4, 0.85))
+            dot.move_to([
+                random.uniform(-5.0, 5.0),
+                random.uniform(-2.8, 2.8), 0])
             particles.add(dot)
         return particles
 
     def animate_particles_movement(self, particles, duration=3):
-        """Animate particles moving with physics simulation."""
+        """Animate particles drifting to new random safe positions (physics simulation)."""
         animations = []
         for particle in particles:
-            new_pos = [random.uniform(-6, 6), random.uniform(-3, 3), 0]
+            new_pos = [
+                random.uniform(-5.0, 5.0),
+                random.uniform(-2.8, 2.8), 0]
             animations.append(particle.animate.move_to(new_pos))
         self.play(*animations, run_time=duration)
 
@@ -651,6 +656,35 @@ class ColorfulScene(Scene):
             run_time=0.5
         )
 
+    def collision_burst(self, obj1, obj2, burst_color=Colors.GOLD):
+        """
+        CINEMATIC collision: objects smash → Flash at midpoint → concentric rings → recolor.
+        Use for nuclear fusion, ionic bonding, chemical reactions.
+        Call AFTER moving obj1 and obj2 close together.
+        """
+        mid = (obj1.get_center() + obj2.get_center()) / 2
+        # Impact glow burst
+        self.play(
+            obj1.animate.set_color(burst_color).scale(1.3),
+            obj2.animate.set_color(burst_color).scale(1.3),
+            run_time=0.25
+        )
+        self.play(Flash(mid, color=burst_color, line_length=0.8, num_lines=18, flash_radius=0.5))
+        # Concentric shock rings
+        rings = VGroup(*[
+            Circle(radius=0.2 + i * 0.28, color=burst_color,
+                   stroke_opacity=max(0.05, 0.7 - i * 0.22))
+            .move_to(mid) for i in range(5)
+        ])
+        self.play(LaggedStart(*[Create(r) for r in rings], lag_ratio=0.15), run_time=0.6)
+        self.play(FadeOut(rings), run_time=0.3)
+        # Settle to product colors
+        self.play(
+            obj1.animate.set_color(Colors.NEON_GREEN).scale(1/1.3),
+            obj2.animate.set_color(Colors.ORANGE).scale(1/1.3),
+            run_time=0.4
+        )
+
     def add_transformation_arrow(self, start_obj, end_obj, label_text="", color=Colors.CYAN):
         """Draw arrow showing transformation/reaction."""
         arrow = Arrow(start_obj.get_right(), end_obj.get_left(), color=color, buff=0.3)
@@ -665,22 +699,33 @@ class ColorfulScene(Scene):
         return arrow
 
     def show_energy_diagram(self, values, labels, title_text):
-        """Show bar chart of energy levels or comparison."""
+        """Show bar chart of energy levels or comparison. Handles any number of bars safely."""
+        n = len(values)
+        max_val = max(values) if values else 1
+        bar_width = min(0.9, 9.0 / max(n, 1) - 0.2)
+        spacing = min(2.0, 10.0 / max(n, 1))
+        start_x = -(n - 1) * spacing / 2
+
         bars = VGroup()
         for i, (val, label) in enumerate(zip(values, labels)):
-            height = val / max(values) * 2
-            bar = Rectangle(width=0.6, height=height, color=Colors.ORANGE, fill_opacity=0.6)
-            bar.move_to([-2 + i * 2, height/2 - 1, 0])
-            label_obj = Text(label, font_size=16, color=Colors.BRIGHT_YELLOW)
-            label_obj.next_to(bar, DOWN, buff=0.2)
-            bars.add(bar, label_obj)
-        
-        title = Text(title_text, font_size=24, color=Colors.CYAN, font="Arial")
+            height = max(0.15, val / max_val * 2.8)
+            bar = Rectangle(width=bar_width, height=height,
+                            color=Colors.ORANGE, fill_opacity=0.7)
+            bar.move_to([start_x + i * spacing, height / 2 - 1.5, 0])
+            bar.set_stroke(Colors.GOLD, width=1.5)
+            label_obj = Text(str(label)[:12], font_size=14, color=Colors.BRIGHT_YELLOW, font="Arial")
+            label_obj.next_to(bar, DOWN, buff=0.15)
+            value_obj = Text(str(val), font_size=13, color=Colors.GOLD)
+            value_obj.next_to(bar, UP, buff=0.1)
+            bars.add(bar, label_obj, value_obj)
+
+        title = Text(str(title_text)[:30], font_size=22, color=Colors.CYAN, font="Arial")
         title.to_edge(UP, buff=0.5)
-        
+        if title.width > 12: title.scale(12 / title.width)
+
         self.play(Write(title))
-        self.play(Create(bars))
-        self.wait(2)
+        self.play(LaggedStart(*[Create(b) for b in bars[::3]], lag_ratio=0.2), run_time=1.2)
+        self.wait(1.5)
         return VGroup(title, bars)
 
     def show_title(self, text_str):

@@ -858,17 +858,70 @@ For pros/cons or multi-property comparison:
 
 ═══════════════════════════════════════════════════════════════════════════════
 
-MANDATORY ColorfulScene METHODS (ALWAYS USE — NEVER use the raw equivalents):
+MANDATORY & AVAILABLE ColorfulScene METHODS — USE THESE, NOT raw Manim equivalents:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  self.show_title("Title Text")             → gradient title + underline. USE every scene.
-  self.play_caption("text")                 → caption box at bottom. ALL narration goes here.
-  self.add_glow_pulse(obj, COLOR)           → pulsing glow on key objects.
-  self.show_key_point("Exam fact")          → gold box at takeaway.
-  self.add_wiggle_effect(obj)               → vibrate animation for "active" objects.
-  self.safe_next_to(label, anchor, DOWN)    → next_to + auto screen-clamp. USE FOR ALL LABELS.
-  self.stack_labels([l1,l2], anchor, DOWN)  → chain multiple labels without overlap.
-  self.clamp_to_screen(obj)                 → call after any .move_to() to ensure on-screen.
+SCENE STRUCTURE (use every video):
+  self.show_title("Bond Types")           → gradient title + underline. Every scene start.
+  self.show_intro("Bond Types","learn...") → show_title + opening caption in one call.
+  self.play_caption("text ≤60 chars")     → caption box at bottom. ALL narration here.
+  self.show_key_point("Exam fact")        → gold highlighted box. Takeaway scenes.
+  self.show_takeaway("key","exam tip")    → FadeOut all + show_key_point + exam caption.
+
+VISUAL QUALITY (use liberally for cinematic feel):
+  self.add_glow_pulse(obj, COLOR)              → pulsing glow highlight. Key moments.
+  self.add_wiggle_effect(obj)                  → vibrate for "active/excited" objects.
+  self.create_glowing_object(mob, COLOR)       → wrap ANY shape in a colored glow ring.
+  self.create_glowing_text("text", 22, COLOR)  → Text with soft glow halo. Headers.
+  self.setup_gradient_header("Title","sub")    → vivid CYAN→PURPLE→PINK gradient header.
+
+LAYOUT (OVERLAP PREVENTION — always use instead of raw .next_to for labels):
+  self.safe_next_to(label, anchor, DOWN, 0.4) → .next_to() + auto clamp to screen.
+  self.stack_labels([l1,l2], anchor, DOWN)    → chain multiple labels, no overlap.
+  self.clamp_to_screen(mob)                   → call after any .move_to() to ensure on-screen.
+  self.create_labeled_object("circle","Nucleus", pos, Colors.CYAN) → shape + label pair.
+  self.create_labeled_shape(shape, "Label", DOWN, 0.3)             → shape + safe label.
+
+REACTIONS & PROCESSES:
+  self.animate_process(reactants_vg, products_vg, "→")  → moves reactants LEFT, products RIGHT with arrow.
+  self.create_reaction_arrow(LEFT*1, RIGHT*1, "ΔH=...")  → Arrow with label above.
+  self.add_transformation_arrow(obj1, obj2, "label")     → Draws arrow between two objects + label.
+  self.add_collision_effect(obj1, obj2, Colors.HOT_PINK) → Smash: both flash color then recolor.
+  self.collision_burst(obj1, obj2)                       → CINEMATIC smash: Flash + color burst + recolor.
+
+ENERGY & COMPARISON CHARTS:
+  self.show_energy_diagram([2,2,34], ["Glyc","Krebs","ETC"], "ATP Yield") → animated bar chart.
+
+PARTICLES:
+  self.create_particle_group(40, 0.3, Colors.CYAN)       → VGroup of random particles.
+  self.animate_particles_movement(particles, duration=2)  → physics drift to new positions.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COLLISION & INTERACTION PATTERNS (nuclear fusion, ionic bonding, chemical reactions):
+─────────────────────────────────────────────────────────────────────────────
+→ Cinematic smash for ANY A + B → C reaction:
+   h1 = Circle(radius=0.3, color=Colors.CYAN, fill_opacity=0.8).move_to(LEFT*2.5)
+   h2 = Circle(radius=0.3, color=Colors.HOT_PINK, fill_opacity=0.8).move_to(RIGHT*2.5)
+   self.play(GrowFromCenter(h1), GrowFromCenter(h2))
+   self.play(h1.animate.move_to(LEFT*0.4), h2.animate.move_to(RIGHT*0.4), run_time=0.8)
+   self.collision_burst(h1, h2)                          # Flash at impact point
+   product = Circle(radius=0.5, color=Colors.GOLD, fill_opacity=0.9).move_to(ORIGIN)
+   self.play(ReplacementTransform(VGroup(h1, h2), product), run_time=1.2)
+
+→ Glowing highlighted structure (key atoms, organelles, nucleus):
+   glowing_nucleus = self.create_glowing_object(Circle(radius=0.4, color=Colors.GOLD), Colors.GOLD)
+   self.play(GrowFromCenter(glowing_nucleus))
+   self.add_glow_pulse(glowing_nucleus, Colors.GOLD)
+
+→ Energy / ATP bar chart (ALWAYS use for respiration, photosynthesis, bioenergetics):
+   chart = self.show_energy_diagram([2, 2, 34], ["Glycolysis","Krebs","ETC"], "ATP per glucose")
+
+→ Particle cloud physics collapse (nebulae, gas pressure, diffusion):
+   cloud = self.create_particle_group(40, 0.3, Colors.CYAN)
+   self.play(LaggedStart(*[FadeIn(p, scale=0.3) for p in cloud], lag_ratio=0.03), run_time=2)
+   self.animate_particles_movement(cloud, duration=1.5)
+   self.play(cloud.animate.scale(0.25).move_to(ORIGIN), run_time=1.5)
+
+─────────────────────────────────────────────────────────────────────────────
 
 ═══════════════════════════════════════════════════════════════════════════════
 LAYOUT ZONES — MANDATORY (PREVENTS TEXT OVERLAP):
