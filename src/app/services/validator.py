@@ -375,12 +375,16 @@ sys.path.insert(0, '.')
 if 'manim_templates' not in sys.modules:
     _mock_mt = types.ModuleType('manim_templates')
     class Colors:
-        GREEN = "#4CAF50"; BLUE = "#2196F3"; RED = "#F44336"
-        YELLOW = "#FFEB3B"; CYAN = "#00BCD4"; WHITE = "#FFFFFF"
-        ORANGE = "#FF9800"; PURPLE = "#9C27B0"; GOLD = "#FFD700"
-        DARK = "#1A1A2E"; LIGHT = "#E8EAF6"; ACCENT = "#64B5F6"
-        ENERGY = "#FFD700"; LIGHT_BEAM = "#FFFDE7"; MOLECULE = "#4CAF50"
-        ELECTRON = "#2196F3"; TEXT = "#FFFFFF"; IMPORTANT = "#F44336"
+        DARK_BG = "#0f0f2e"
+        CYAN = "#00FFFF"; BLUE = "#0000FF"; RED = "#FF0000"
+        HOT_PINK = "#FF69B4"; PINK = "#FF69B4"
+        BRIGHT_YELLOW = "#FFD700"; YELLOW = "#FFD700"; GOLD = "#FFD700"
+        NEON_GREEN = "#39FF14"; GREEN = "#39FF14"
+        ORANGE = "#FF8C00"; PURPLE = "#9D00FF"
+        WHITE = "#FFFFFF"; BLACK = "#000000"
+        GRAY = "#808080"; LT_GRAY = "#CCCCCC"; TEAL = "#008080"
+        LIGHT = "#FFD700"; ENERGY = "#FF8C00"; MOLECULE = "#39FF14"
+        ELECTRON = "#00FFFF"; TEXT = "#FFFFFF"; IMPORTANT = "#FFD700"
     _mock_mt.Colors = Colors
     _mock_mt.phasor_to_sine_animation = lambda *a, **kw: None
     _mock_mt.static_sine_wave = lambda *a, **kw: None
