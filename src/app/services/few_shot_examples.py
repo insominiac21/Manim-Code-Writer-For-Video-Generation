@@ -965,6 +965,67 @@ class GeneratedScene(ColorfulScene):
 
 
 # ===========================================
+# Golden Example: SHM / Oscillations / Phasor
+# ===========================================
+GOLDEN_EXAMPLE_SHM = '''from manim import *
+from app.services.manim_templates import ColorfulScene, Colors
+
+class GeneratedScene(ColorfulScene):
+    def construct(self):
+        self.add_background_particles()
+
+        # ── SCENE 1: Title ──────────────────────────────────────────────────────
+        self.show_title("Simple Harmonic Motion")
+        self.play_caption("Oscillation — the heartbeat of physics")
+        self.wait(0.8)
+
+        # ── SCENE 2: Key equation ────────────────────────────────────────────────
+        eq = Text("x  =  A · sin(ωt + φ)", font_size=30, color=Colors.BRIGHT_YELLOW)
+        eq.shift(UP * 0.5)
+        labels = VGroup(
+            Text("A = amplitude", font_size=18, color=Colors.CYAN),
+            Text("ω = angular frequency", font_size=18, color=Colors.NEON_GREEN),
+            Text("φ = phase", font_size=18, color=Colors.HOT_PINK),
+        )
+        self.arrange_column(labels[0], labels[1], labels[2], start_y=-0.8, spacing=0.55)
+        self.play(Write(eq), run_time=1.0)
+        self.play(LaggedStart(*[FadeIn(l) for l in labels], lag_ratio=0.25))
+        self.play_caption("Three parameters completely define any oscillation")
+        self.wait(1)
+        self.play(FadeOut(eq), FadeOut(labels))
+
+        # ── SCENE 3: Phasor → Sine wave tracing ────────────────────────────────
+        intro = Text("Phasor → Sine Wave", font_size=24, color=Colors.GOLD).shift(UP * 3.0)
+        self.play(FadeIn(intro))
+        self.play_caption("A rotating phasor traces the sine curve")
+        group = self.phasor_to_sine_animation(n_cycles=2, run_time=7)
+        self.wait(0.5)
+        self.play(FadeOut(group), FadeOut(intro))
+
+        # ── SCENE 4: Real-world examples ────────────────────────────────────────
+        self.show_title("Where SHM Appears")
+        examples = [
+            ("Pendulum",    Colors.CYAN,         LEFT*3.5),
+            ("Spring-Mass", Colors.NEON_GREEN,    ORIGIN),
+            ("LC Circuit",  Colors.HOT_PINK,      RIGHT*3.5),
+        ]
+        icons = VGroup()
+        lbls  = VGroup()
+        for name, col, pos in examples:
+            icon = Circle(radius=0.5, color=col, fill_opacity=0.7).move_to(pos)
+            lbl  = Text(name, font_size=18, color=col).next_to(icon, DOWN, buff=0.3)
+            icons.add(icon)
+            lbls.add(lbl)
+        self.play(LaggedStart(*[GrowFromCenter(i) for i in icons], lag_ratio=0.3))
+        self.play(LaggedStart(*[Write(l) for l in lbls], lag_ratio=0.3))
+        self.play_caption("Pendulums, springs, and circuits all follow x = A·sin(ωt)")
+        self.wait(2)
+        self.play(FadeOut(icons), FadeOut(lbls))
+        self.play(FadeOut(*self.mobjects))
+'''
+
+
+# ===========================================
 # Combined Few-Shot Examples String
 # ===========================================
 FEW_SHOT_EXAMPLES = f"""
@@ -1024,6 +1085,7 @@ def get_few_shot_for_topic(topic: str) -> str:
     - GOLDEN_EXAMPLE_VACCINE:     immunity, vaccines, antibodies, pathogens
     - GOLDEN_EXAMPLE_RESPIRATION: cellular processes, ATP, metabolism
     - GOLDEN_EXAMPLE_FUSION:      nuclear physics, stars, energy
+    - GOLDEN_EXAMPLE_SHM:         SHM, oscillations, phasors, waves, unit circle, AC circuits
 
     MANDATORY structure:
     INTRO (10%) → CORE CONTENT (70-80%) → TAKEAWAY (10%)
@@ -1049,26 +1111,33 @@ def get_few_shot_for_topic(topic: str) -> str:
                                            'sun', 'hydrogen', 'helium', 'proton']):
         return GOLDEN_EXAMPLE_STAR  # Best cinematic example for visual richness
 
-    # PRIORITY 4: Physics (waves, forces, motion)
-    elif any(kw in topic_lower for kw in ['physics', 'motion', 'force', 'wave', 'oscillat',
-                                           'pendulum', 'space', 'energy', 'electric',
-                                           'magnet', 'circuit', 'light', 'optic']):
+    # PRIORITY 4: SHM / Oscillations / Waves / Phasors
+    elif any(kw in topic_lower for kw in ['simple harmonic', 'shm', 'oscillat', 'pendulum',
+                                           'phasor', 'sine wave', 'angular frequency',
+                                           'amplitude', 'vibrat', 'resonan', 'spring mass',
+                                           'ac circuit', 'unit circle', 'wave motion']):
+        return GOLDEN_EXAMPLE_SHM
+
+    # PRIORITY 5: Physics (general forces, motion, optics)
+    elif any(kw in topic_lower for kw in ['physics', 'motion', 'force', 'wave', 'space',
+                                           'energy', 'electric', 'magnet', 'circuit',
+                                           'light', 'optic']):
         return GOLDEN_EXAMPLE_STAR  # Star example demos particle/transform patterns well
 
-    # PRIORITY 5: Biology (cells, organs, processes)
+    # PRIORITY 6: Biology (cells, organs, processes)
     elif any(kw in topic_lower for kw in ['biology', 'cell', 'dna', 'mitos', 'bacteria',
                                            'enzyme', 'protein', 'digestion', 'blood',
                                            'heart', 'nerve', 'brain', 'organ', 'meiosis',
                                            'genetics', 'mendel', 'chromosome']):
         return GOLDEN_EXAMPLE_RESPIRATION  # Biochem process → Respiration template
 
-    # PRIORITY 6: Chemistry
+    # PRIORITY 7: Chemistry
     elif any(kw in topic_lower for kw in ['chemistry', 'bond', 'molecule', 'atom', 'reaction',
                                            'ionic', 'covalent', 'acid', 'base', 'ph',
                                            'oxidation', 'reduction', 'electrolysis']):
         return GOLDEN_EXAMPLE_STAR  # Fusion example covers A + B → C reactions
 
-    # PRIORITY 7: Math
+    # PRIORITY 8: Math
     elif any(kw in topic_lower for kw in ['math', 'quadrat', 'function', 'graph', 'equation',
                                            'calculus', 'trigonometry', 'algebra', 'geometry']):
         return EXAMPLE_MATH_QUADRATIC

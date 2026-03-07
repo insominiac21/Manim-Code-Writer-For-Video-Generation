@@ -668,6 +668,16 @@ ionic_rect.move_to(number_line.number_to_point(2.85) + UP)
 ionic_label = Text("Zone Label", font_size=18, color=Colors.HOT_PINK).next_to(ionic_rect, UP)
 self.play(FadeIn(ionic_rect), Write(ionic_label))
 
+**Q. PHASOR → SINE WAVE TRACING (SHM, oscillations, AC circuits, unit circle):**
+# ONE CALL — handles the entire animation. Do not rebuild this manually.
+self.show_title("Simple Harmonic Motion")
+info = Text("x = A·sin(ωt + φ)", font_size=26, color=Colors.BRIGHT_YELLOW).shift(UP*2.8)
+self.play(Write(info))
+group = self.phasor_to_sine_animation(n_cycles=2, run_time=7)
+self.play_caption("Phasor rotation traces the sine wave")
+self.wait(1)
+self.play(FadeOut(group), FadeOut(info))
+
 ═══════════════════════════════════════════════════════════════════════════════
 BANNED PATTERNS (NEVER DO THESE!)
 ═══════════════════════════════════════════════════════════════════════════════
@@ -894,6 +904,15 @@ ENERGY & COMPARISON CHARTS:
 PARTICLES:
   self.create_particle_group(40, 0.3, Colors.CYAN)       → VGroup of random particles.
   self.animate_particles_movement(particles, duration=2)  → physics drift to new positions.
+
+WAVES & OSCILLATIONS (SHM, unit circle, phasors, electromagnetic waves):
+  self.phasor_to_sine_animation(n_cycles=2, run_time=6)
+      → 3B1B-style: rotating phasor circle (LEFT) traces sine wave (RIGHT) in real time.
+         Returns VGroup of all objects — FadeOut when done.
+         ALWAYS use for: SHM, oscillations, AC circuits, unit circle, wave intro.
+         circle_center defaults to LEFT*3.5; radius defaults to 1.0.
+  self.static_sine_wave(amplitude=1.0, frequency=1.0, label_text="y = A sin(ωt)")
+      → Static FunctionGraph sine wave with optional label. For frozen diagrams only.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 COLLISION & INTERACTION PATTERNS (nuclear fusion, ionic bonding, chemical reactions):
@@ -920,6 +939,14 @@ COLLISION & INTERACTION PATTERNS (nuclear fusion, ionic bonding, chemical reacti
    self.play(LaggedStart(*[FadeIn(p, scale=0.3) for p in cloud], lag_ratio=0.03), run_time=2)
    self.animate_particles_movement(cloud, duration=1.5)
    self.play(cloud.animate.scale(0.25).move_to(ORIGIN), run_time=1.5)
+
+→ Phasor → Sine wave tracing (SHM, oscillation, AC circuits, unit circle):
+   self.show_title("Simple Harmonic Motion")
+   lbl = Text("ω = angle/time", font_size=22, color=Colors.BRIGHT_YELLOW).to_edge(UP).shift(DOWN*0.6)
+   self.play(FadeIn(lbl))
+   group = self.phasor_to_sine_animation(n_cycles=2, run_time=7)
+   self.wait(1)
+   self.play(FadeOut(group), FadeOut(lbl))
 
 ─────────────────────────────────────────────────────────────────────────────
 

@@ -643,6 +643,146 @@ class ColorfulScene(Scene):
             animations.append(particle.animate.move_to(new_pos))
         self.play(*animations, run_time=duration)
 
+    # ═══════════════════════════════════════════════════════════
+    # MATHEMATICAL / PHYSICS ANIMATION HELPERS
+    # ═══════════════════════════════════════════════════════════
+
+    def phasor_to_sine_animation(self, n_cycles=2, run_time=6,
+                                  circle_center=None, radius=1.0):
+        """
+        3Blue1Brown-style: rotating phasor circle on LEFT traces sine wave on RIGHT.
+        The dot on the circle casts a 'shadow' that draws the sine curve in real time.
+
+        Usage:
+            group = self.phasor_to_sine_animation(n_cycles=2, run_time=6)
+            self.wait(1)
+            self.play(FadeOut(group))
+        """
+        if circle_center is None:
+            circle_center = np.array([-3.5, 0.0, 0.0])
+        else:
+            circle_center = np.array(circle_center)
+
+        total_angle = n_cycles * 2 * np.pi
+        # x_scale maps angle (radians) to horizontal screen units
+        wave_x_start = circle_center[0] + radius + 0.6
+        wave_width = 5.5  # screen units for full 2 cycles
+        x_scale = wave_width / total_angle
+
+        # --- Static elements ---
+        circle = Circle(radius=radius, color=Colors.CYAN, stroke_width=2)
+        circle.move_to(circle_center)
+        center_dot = Dot(circle_center, radius=0.05, color=Colors.WHITE)
+
+        # Horizontal axis for the wave
+        x_axis = Arrow(
+            np.array([wave_x_start, circle_center[1], 0]),
+            np.array([wave_x_start + wave_width + 0.3, circle_center[1], 0]),
+            color=Colors.LT_GRAY, stroke_width=2, buff=0, tip_length=0.18
+        )
+        # Amplitude guide lines
+        amp_top = DashedLine(
+            np.array([wave_x_start - 0.2, circle_center[1] + radius, 0]),
+            np.array([wave_x_start + wave_width, circle_center[1] + radius, 0]),
+            color=Colors.GRAY, stroke_width=1, stroke_opacity=0.4
+        )
+        amp_bot = DashedLine(
+            np.array([wave_x_start - 0.2, circle_center[1] - radius, 0]),
+            np.array([wave_x_start + wave_width, circle_center[1] - radius, 0]),
+            color=Colors.GRAY, stroke_width=1, stroke_opacity=0.4
+        )
+
+        self.play(
+            Create(circle), FadeIn(center_dot),
+            Create(x_axis), Create(amp_top), Create(amp_bot),
+            run_time=1.0
+        )
+
+        # --- ValueTracker drives everything ---
+        t = ValueTracker(0.001)  # start just above 0 to avoid empty range
+
+        # Phasor arm (line from center to dot on circle)
+        phasor_arm = always_redraw(lambda: Line(
+            circle_center,
+            circle_center + np.array([
+                radius * np.cos(t.get_value()),
+                radius * np.sin(t.get_value()), 0]),
+            color=Colors.GOLD, stroke_width=3
+        ))
+
+        # Phasor dot (bright dot on circle edge)
+        phasor_dot = always_redraw(lambda: Dot(
+            circle_center + np.array([
+                radius * np.cos(t.get_value()),
+                radius * np.sin(t.get_value()), 0]),
+            radius=0.12, color=Colors.GOLD
+        ))
+
+        # Connecting dashed line: phasor dot → point on sine wave
+        connector = always_redraw(lambda: DashedLine(
+            circle_center + np.array([
+                radius * np.cos(t.get_value()),
+                radius * np.sin(t.get_value()), 0]),
+            np.array([
+                wave_x_start + t.get_value() * x_scale,
+                circle_center[1] + radius * np.sin(t.get_value()), 0]),
+            color=Colors.GRAY, stroke_width=1.5, stroke_opacity=0.55
+        ))
+
+        # Traced sine curve: ParametricFunction rebuilt each frame up to t
+        sine_trace = always_redraw(lambda: ParametricFunction(
+            lambda s: np.array([
+                wave_x_start + s * x_scale,
+                circle_center[1] + radius * np.sin(s), 0
+            ]),
+            t_range=[0, max(0.001, t.get_value())],
+            color=Colors.HOT_PINK,
+            stroke_width=3
+        ))
+
+        # Current wave-front dot
+        wave_dot = always_redraw(lambda: Dot(
+            np.array([
+                wave_x_start + t.get_value() * x_scale,
+                circle_center[1] + radius * np.sin(t.get_value()), 0]),
+            radius=0.09, color=Colors.HOT_PINK
+        ))
+
+        self.add(phasor_arm, phasor_dot, sine_trace, connector, wave_dot)
+        self.play(
+            t.animate.set_value(total_angle),
+            run_time=run_time, rate_func=linear
+        )
+        self.remove(connector)  # clean up updater objects before FadeOut
+
+        return VGroup(circle, center_dot, x_axis, amp_top, amp_bot,
+                      phasor_arm, phasor_dot, sine_trace, wave_dot)
+
+    def static_sine_wave(self, amplitude=1.0, frequency=1.0, phase=0.0,
+                          x_range=None, color=None, label_text=""):
+        """
+        Draw a static sine wave with optional label.
+        For animation use phasor_to_sine_animation instead.
+
+        Usage:
+            wave = self.static_sine_wave(amplitude=1.2, label_text="y = A sin(ωt)")
+            self.play(Create(wave))
+        """
+        if x_range is None:
+            x_range = [-5, 5]
+        if color is None:
+            color = Colors.HOT_PINK
+        wave = FunctionGraph(
+            lambda x: amplitude * np.sin(frequency * x + phase),
+            x_range=x_range, color=color, stroke_width=3
+        )
+        if label_text:
+            lbl = Text(str(label_text)[:30], font_size=16,
+                       color=Colors.BRIGHT_YELLOW, font="Arial")
+            self.safe_next_to(lbl, wave, UP, buff=0.25)
+            return VGroup(wave, lbl)
+        return wave
+
     def add_collision_effect(self, obj1, obj2, color=Colors.HOT_PINK):
         """Create collision/interaction between two objects showing reaction."""
         self.play(
