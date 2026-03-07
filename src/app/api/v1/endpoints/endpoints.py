@@ -15,7 +15,7 @@ def health():
 
 def _run_pipeline_bg(job_id: str, request: GenerateRequest):
     """Background thread: run pipeline then render video, updating jobs dict throughout."""
-    import re, json, os
+    import re, json, os, time
     from pathlib import Path
     BASE_DIR = Path(os.getenv("BASE_DIR", Path(__file__).resolve().parents[5]))
     OUTPUT_DIR = BASE_DIR / "output"
@@ -54,6 +54,9 @@ def _run_pipeline_bg(job_id: str, request: GenerateRequest):
             try:
                 video_url = render_video(job_id, manim_file)
                 print(f"[BG] Render result: {video_url}")
+                # Append cache-buster so browser never plays a stale cached file
+                if video_url:
+                    video_url = f"{video_url}?t={int(time.time())}"
             except Exception as render_err:
                 print(f"[BG] Render error: {render_err}")
 
@@ -78,6 +81,7 @@ def _run_pipeline_bg(job_id: str, request: GenerateRequest):
 @router.post("/api/generate", response_model=JobResponse)
 def create_job(request: GenerateRequest):
     import re
+    print(f"[API] POST /api/generate concept='{request.concept}' auto_render={request.auto_render} fast_mode={request.fast_mode}")
     safe_concept = re.sub(r'[^a-zA-Z0-9\s]', '', request.concept)
     safe_concept = safe_concept.lower().replace(' ', '_')[:30]
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -109,6 +113,7 @@ def create_job(request: GenerateRequest):
 
 @router.get("/api/status/{job_id}", response_model=StatusResponse)
 def get_status(job_id: str):
+    print(f"[API] GET /api/status/{job_id}")
     if job_id not in jobs:
         raise HTTPException(status_code=404, detail="Job not found")
     job = jobs[job_id]
