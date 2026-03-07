@@ -1,6 +1,6 @@
 """
 Groq LLM Client with automatic key rotation and 429 cooldown tracking.
-Tries GROQ_API_KEY1, GROQ_API_KEY2, GROQ_API_KEY3 in order.
+Tries GROQ_API_KEY1, GROQ_API_KEY2, GROQ_API_KEY3, GROQ_API_KEY4 in order.
 Keys from the same Groq org share an org-level rate limit, so when all
 keys are rate-limited we wait for the shortest cooldown to expire.
 """
@@ -61,7 +61,7 @@ def call_groq(
     model = model or GROQ_MODEL
     all_keys = _get_keys()
     if not all_keys:
-        raise RuntimeError("No Groq API keys configured. Check GROQ_API_KEY1/2/3 in .env")
+        raise RuntimeError("No Groq API keys configured. Check GROQ_API_KEY1/2/3/4 in .env")
 
     def _is_success(resp) -> bool:
         """Distinguish real LLM content from HTTP error strings returned by _try_key."""

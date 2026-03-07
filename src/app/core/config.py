@@ -19,6 +19,7 @@ class Settings:
     GROQ_API_KEY1: str = os.getenv("GROQ_API_KEY1", "")
     GROQ_API_KEY2: str = os.getenv("GROQ_API_KEY2", "")
     GROQ_API_KEY3: str = os.getenv("GROQ_API_KEY3", "")
+    GROQ_API_KEY4: str = os.getenv("GROQ_API_KEY4", "")
     GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
     LLM_GENERATOR_MAX_TOKENS: int = int(os.getenv("LLM_GENERATOR_MAX_TOKENS", "4096"))
     LLM_GENERATOR_TEMPERATURE: float = float(os.getenv("LLM_GENERATOR_TEMPERATURE", "0.01"))
