@@ -533,9 +533,9 @@ def _try_render_direct(job_id: str, manim_file: Path) -> Optional[str]:
         manim_bin = _resolve_manim_bin()
         print(f"[Render-Direct] Using manim={manim_bin}")
         result = subprocess.run(
-            [manim_bin, "-qm", str(manim_file), "GeneratedScene",
+            [manim_bin, "-qh", str(manim_file), "GeneratedScene",
              "--media_dir", str(VIDEO_DIR / job_id), "--disable_caching"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=240,
             env=env
         )
         if result.returncode == 0:
@@ -562,9 +562,9 @@ def _try_render_python_module(job_id: str, manim_file: Path) -> Optional[str]:
         python_bin = _resolve_python_bin()
         print(f"[Render-Python] Using python={python_bin}")
         result = subprocess.run(
-            [python_bin, "-m", "manim", "-qm", str(manim_file), "GeneratedScene",
+            [python_bin, "-m", "manim", "-qh", str(manim_file), "GeneratedScene",
              "--media_dir", str(VIDEO_DIR / job_id), "--disable_caching"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=240,
             env=env
         )
         if result.returncode == 0:
@@ -589,9 +589,9 @@ def _try_render_docker(job_id: str, manim_file: Path) -> Optional[str]:
              "-v", f"{manim_dir}:/manim",
              "-v", f"{VIDEO_DIR.absolute()}:/media",
              "manimcommunity/manim",
-             "manim", "-qm", f"/manim/{manim_file.name}", "GeneratedScene",
+             "manim", "-qh", f"/manim/{manim_file.name}", "GeneratedScene",
              "--media_dir", f"/media/{job_id}"],
-            capture_output=True, text=True, timeout=180
+            capture_output=True, text=True, timeout=240
         )
         if result.returncode == 0:
             return _find_and_copy_video(job_id)

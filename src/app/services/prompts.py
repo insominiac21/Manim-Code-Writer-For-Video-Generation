@@ -173,25 +173,23 @@ DURATION-BASED SCENE COUNT:
 SCREEN LAYOUT - STRICT ZONES (PREVENTS OVERLAP & OUT-OF-BOUNDS)
 ═══════════════════════════════════════════════════════════════════════════════
 
-TITLE ZONE (y = 3 to 3.5) - Only scene titles go here
-  Use: .to_edge(UP, buff=0.5)
+  TITLE ZONE   y ∈ [+2.5, +3.5]  — self.show_title() only. Nothing else here.
+  UPPER ZONE   y ∈ [+0.6, +2.2]  — Primary diagrams (atoms, cells, diagrams).
+  CENTER ZONE  y ∈ [-0.6, +0.6]  — Secondary elements (arrows, bonds, products).
+  LOWER ZONE   y ∈ [-1.8, -0.6]  — Supporting text, sub-labels, smaller items.
+  CAPTION BAR  y ∈ [-3.5, -2.5]  — self.play_caption() only.
 
-MAIN ZONE (y = -2 to 2.5) - All visuals and labels here
-  Center objects at ORIGIN or slight UP (UP * 0.5)
-  Labels ALWAYS use: .next_to(obj, DOWN, buff=0.3)
+HORIZONTAL BOUNDS: x = -6 to +6. VERTICAL BOUNDS: y = -3.2 to +3.2.
 
-CAPTION ZONE (y = -3.5) - ONLY play_caption() goes here
-  MAX 50 characters per caption
-
-HORIZONTAL BOUNDS: x = -6 to +6 (never exceed!)
-VERTICAL BOUNDS: y = -3.5 to +3.5 (never exceed!)
-
-OVERLAP PREVENTION RULES (CRITICAL):
-1. MAX 3 OBJECTS on screen at once (including labels)
-2. MINIMUM SPACING: 1.5 units between object centers
-3. LABELS go BELOW objects ONLY
-4. CLEAR PREVIOUS before adding new: FadeOut old then FadeIn new
-5. NEVER stack text - each text element has its own vertical space
+OVERLAP PREVENTION RULES (ALL MANDATORY):
+1. MAX 4 objects on screen simultaneously (shapes + labels combined).
+2. MINIMUM 0.7 units vertical spacing between any two text objects.
+3. ALL labels: .next_to(shape, DOWN, buff=0.3) — NEVER raw .move_to() for text.
+4. CLEAR PREVIOUS before adding new: play(FadeOut(old_group)) then create new.
+5. NEVER stack identical-Y elements — shift one LEFT/RIGHT if Y difference < 0.7.
+6. Use self.safe_next_to(label, obj, DOWN) in actions[] to auto-clamp labels.
+7. Use self.stack_labels([lbl1, lbl2], anchor, DOWN) for multiple labels.
+8. In "layout" field: always specify EXACT zone — "atom at UPPER ZONE (y=+1.5)", not "CENTER".
 
 ═══════════════════════════════════════════════════════════════════════════════
 TOPIC-SPECIFIC VISUAL REQUIREMENTS
@@ -862,17 +860,46 @@ For pros/cons or multi-property comparison:
 
 MANDATORY ColorfulScene METHODS (ALWAYS USE — NEVER use the raw equivalents):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  self.show_title("Title Text")      → gradient title. USE for EVERY scene start.
-  self.play_caption("text")          → caption box at bottom. USE for all narration.
-  self.add_glow_pulse(obj, COLOR)    → pulsing glow highlight on key objects.
-  self.show_key_point("Exam fact")   → gold box at takeaway.
-  self.add_wiggle_effect(obj)        → vibrate animation for "active" objects.
+  self.show_title("Title Text")             → gradient title + underline. USE every scene.
+  self.play_caption("text")                 → caption box at bottom. ALL narration goes here.
+  self.add_glow_pulse(obj, COLOR)           → pulsing glow on key objects.
+  self.show_key_point("Exam fact")          → gold box at takeaway.
+  self.add_wiggle_effect(obj)               → vibrate animation for "active" objects.
+  self.safe_next_to(label, anchor, DOWN)    → next_to + auto screen-clamp. USE FOR ALL LABELS.
+  self.stack_labels([l1,l2], anchor, DOWN)  → chain multiple labels without overlap.
+  self.clamp_to_screen(obj)                 → call after any .move_to() to ensure on-screen.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+═══════════════════════════════════════════════════════════════════════════════
+LAYOUT ZONES — MANDATORY (PREVENTS TEXT OVERLAP):
+═══════════════════════════════════════════════════════════════════════════════
+
+Screen is divided into 4 non-overlapping vertical zones:
+
+  TITLE ZONE   Y ∈ [+2.5, +3.5]  → self.show_title() only. DO NOT place anything else here.
+  UPPER ZONE   Y ∈ [+0.6, +2.2]  → Main objects, atom/cell diagrams, equations.
+  CENTER ZONE  Y ∈ [-0.6, +0.6]  → Secondary structures, arrows, bonds.
+  LOWER ZONE   Y ∈ [-1.8, -0.6]  → Supporting text, sub-labels, formulae.
+  CAPTION BAR  Y ∈ [-3.5, -2.5]  → self.play_caption() only. DO NOT place anything here.
+
+RULES — EVERY RULE MANDATORY:
+1. NEVER place two text objects within 0.7 units of each other (Y axis).
+2. After self.show_title(), all content starts at Y ≤ +1.8 (title occupies top).
+3. Labels ALWAYS use .next_to(shape, DOWN, buff=0.3) — NEVER raw .move_to() for text.
+4. Multiple labels on same scene: stack with .arrange(DOWN, buff=0.35) or .next_to() chain.
+5. Left/Right split: left objects at X=-3.0, right objects at X=+3.0, keep Y ∈ [-1, +1.5].
+6. Use self.safe_next_to(label, atom, DOWN, buff=0.3) for labels — auto-clamps to screen.
+7. Use self.stack_labels([lbl1, lbl2], anchor, DOWN) for multiple labels on one object.
+8. NEVER use UP*3.5 or DOWN*3.5 — use .to_edge(UP/DOWN, buff=0.5) instead.
+9. Max 4 distinct text objects visible on screen simultaneously.
+10. If a label would overlap another, SKIP it or POSITION it to the side instead.
+
+═══════════════════════════════════════════════════════════════════════════════
+
 SCREEN BOUNDS - CRITICAL (Manim screen is 14.2 x 8 units):
-- SAFE: X from -6 to 6, Y from -3.5 to 3.5
+- SAFE: X from -6 to 6, Y from -3.2 to 3.2
 - NEVER .shift(UP*4) or .shift(DOWN*4) — use .to_edge(UP/DOWN, buff=0.5)
-- font_size MAX 44, MIN 14. Captions: 22. Titles: 36.
+- font_size MAX 44, MIN 14. Captions: 20. Titles: 36.
 - MAX caption length: 60 characters. Break long text with \\n.
 
 BANNED ANIMATIONS (CAUSE NameError — DO NOT USE):

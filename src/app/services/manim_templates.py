@@ -152,25 +152,52 @@ class ColorfulScene(Scene):
         self.add_background_particles()
 
     def add_background_particles(self):
-        """Add subtle floating particles - REDUCED for cleaner look."""
-        for _ in range(12):  # Reduced from 25 for cleaner academic look
-            d = Dot(radius=random.uniform(0.02, 0.05), color=random.choice([Colors.CYAN, Colors.PURPLE]))
-            d.move_to(np.array([random.uniform(-7, 7), random.uniform(-4, 4), 0]))
-            d.set_opacity(random.uniform(0.15, 0.3))  # More subtle
-            
-            # Assign random velocity - slower for less distraction
-            d.velocity = np.array([random.uniform(-0.05, 0.05), random.uniform(-0.05, 0.05), 0])
-            
-            def update_dot(mob, dt):
+        """Rich deep-space starfield with drifting nebula particles."""
+        # --- Static distant stars (60 tiny dots, varied brightness) ---
+        star_colors = [Colors.WHITE, Colors.LT_GRAY, Colors.CYAN, "#FFE4B5", "#AACCFF"]
+        for _ in range(60):
+            star = Dot(radius=random.uniform(0.008, 0.032),
+                       color=random.choice(star_colors))
+            star.move_to(np.array([
+                random.uniform(-7.2, 7.2),
+                random.uniform(-4.2, 4.2), 0]))
+            star.set_opacity(random.uniform(0.10, 0.65))
+            self.add(star)
+
+        # --- Drifting nebula particles (20 larger, slowly moving) ---
+        drift_colors = [Colors.CYAN, Colors.PURPLE, Colors.HOT_PINK, "#5555FF"]
+        for _ in range(20):
+            d = Dot(radius=random.uniform(0.025, 0.060),
+                    color=random.choice(drift_colors))
+            d.move_to(np.array([
+                random.uniform(-7, 7),
+                random.uniform(-4, 4), 0]))
+            d.set_opacity(random.uniform(0.06, 0.18))
+            d.velocity = np.array([
+                random.uniform(-0.04, 0.04),
+                random.uniform(-0.03, 0.03), 0])
+            def _drift(mob, dt):
                 mob.shift(mob.velocity * dt)
-                # Wrap around screen
-                if mob.get_x() > 7.5: mob.set_x(-7.5)
+                if mob.get_x() > 7.5:  mob.set_x(-7.5)
                 if mob.get_x() < -7.5: mob.set_x(7.5)
-                if mob.get_y() > 4.5: mob.set_y(-4.5)
+                if mob.get_y() > 4.5:  mob.set_y(-4.5)
                 if mob.get_y() < -4.5: mob.set_y(4.5)
-                
-            d.add_updater(update_dot)
+            d.add_updater(_drift)
             self.add(d)
+
+        # --- Twinkling bright accent stars (5, pulsing opacity) ---
+        for _ in range(5):
+            bright = Dot(radius=random.uniform(0.04, 0.08), color=Colors.WHITE)
+            bright.move_to(np.array([
+                random.uniform(-6, 6),
+                random.uniform(-3.5, 3.5), 0]))
+            bright.t_offset = random.uniform(0, 6.28)
+            bright.t = 0.0
+            def _twinkle(mob, dt):
+                mob.t += dt
+                mob.set_opacity(0.25 + 0.30 * np.sin(mob.t * 1.8 + mob.t_offset))
+            bright.add_updater(_twinkle)
+            self.add(bright)
 
     def create_caption(self, text_str, font_size=20, color=Colors.WHITE, position=DOWN):
         """
@@ -280,6 +307,56 @@ class ColorfulScene(Scene):
             Wiggle(mobject, scale_value=scale_value, rotation_angle=rotation_angle),
             run_time=0.6
         )
+
+    # ═══════════════════════════════════════════════════════════
+    # LAYOUT HELPERS — Prevent text/object overlap
+    # ═══════════════════════════════════════════════════════════
+
+    def clamp_to_screen(self, mob, x_margin=0.5, y_margin=0.4):
+        """Shift mob so it stays within screen bounds. Returns mob."""
+        xl, xr = -7.1 + x_margin, 7.1 - x_margin
+        yb, yt = -4.0 + y_margin, 4.0 - y_margin
+        if mob.get_left()[0] < xl:   mob.shift(RIGHT * (xl - mob.get_left()[0]))
+        if mob.get_right()[0] > xr:  mob.shift(LEFT  * (mob.get_right()[0] - xr))
+        if mob.get_bottom()[1] < yb: mob.shift(UP    * (yb - mob.get_bottom()[1]))
+        if mob.get_top()[1] > yt:    mob.shift(DOWN  * (mob.get_top()[1] - yt))
+        if mob.width > 13.0:  mob.scale(13.0 / mob.width)
+        if mob.height > 7.0:  mob.scale(7.0  / mob.height)
+        return mob
+
+    def safe_next_to(self, mob, anchor, direction=DOWN, buff=0.4):
+        """next_to + clamp. Always use instead of raw .next_to for labels."""
+        mob.next_to(anchor, direction, buff=buff)
+        return self.clamp_to_screen(mob)
+
+    def arrange_column(self, *mobjects, start_y=1.5, spacing=0.65, center_x=0.0):
+        """
+        Place mobjects in a vertical column, top-down from start_y.
+        Guarantees no vertical overlap. Returns VGroup.
+        group = self.arrange_column(label1, label2, label3, start_y=1.8)
+        """
+        y = start_y
+        for mob in mobjects:
+            mob.move_to([center_x, y, 0])
+            self.clamp_to_screen(mob)
+            y -= (mob.height / 2 + spacing + mobjects[list(mobjects).index(mob) + 1].height / 2
+                  if list(mobjects).index(mob) + 1 < len(mobjects) else 0)
+        return VGroup(*mobjects)
+
+    def stack_labels(self, labels, anchor_obj, direction=DOWN, buff=0.35, spacing=0.35):
+        """
+        Stack a list of Text/VGroup labels below (or above) anchor_obj,
+        each spaced by `spacing`. Clamps each to screen.
+        Returns VGroup of labels.
+        """
+        group = VGroup()
+        prev = anchor_obj
+        for lbl in labels:
+            lbl.next_to(prev, direction, buff=buff if prev is anchor_obj else spacing)
+            self.clamp_to_screen(lbl)
+            group.add(lbl)
+            prev = lbl
+        return group
 
     def create_labeled_shape(self, shape, label_text, label_direction=DOWN, buff=0.3):
         """
