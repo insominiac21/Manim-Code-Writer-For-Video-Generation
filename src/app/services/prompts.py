@@ -684,14 +684,20 @@ BANNED PATTERNS (NEVER DO THESE!)
 
 - MathTex, Tex, Matrix             (NO LATEX - user doesn't have it)
 - SVGMobject, ImageMobject         (NO external assets — causes FileNotFoundError)
-- ZoomIn, ZoomOut, SlideIn, etc.   (hallucinated animations - cause NameError)
+- ZoomIn, ZoomOut, SlideIn         (hallucinated animations - cause NameError)
+- Bounce, Pulse, Blink, Appear, Disappear, Spotlight, TypeWrite, SweepIn, SweepOut
+                                   (ALL hallucinated — cause NameError)
+- Highlight(...)                   (hallucinated — use Indicate() instead)
 - Glow(...)                        (NOT a Manim CE class — causes NameError)
+- Bubble(...), SpeechBubble(...)   (NOT Manim CE classes — causes NameError)
+- Sparkle(...), AnnotationDot(...) (NOT Manim CE classes — causes NameError)
 - Flash(..., scale_factor=...)     (scale_factor is NOT a Flash param — causes TypeError)
 - Flash(..., glow_radius=...)      (glow_radius is NOT a Flash param — causes TypeError)
 - font_size > 44                   (TOO BIG)
 - Literal newline inside string    (SYNTAX ERROR - use \\n escape instead)
 
 Flash ONLY accepts: flash_radius=0.5, num_lines=18, color=..., run_time=..., rate_func=...
+Indicate() is the correct class for highlighting. Wiggle() for shaking. Write() for typing.
 
 ═══════════════════════════════════════════════════════════════════════════════
 SCREEN BOUNDS (Strict!)

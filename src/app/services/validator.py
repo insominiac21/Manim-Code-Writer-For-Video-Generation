@@ -38,7 +38,11 @@ FORBIDDEN_SUBSTRINGS = (
 BANNED_MANIM_CLASSES = {
     "ParametricCurve", "Sphere", "Star", "Surface", "Cube", "Prism",
     "ThreeDAxes", "Cylinder", "Cone", "Torus", "Mobius", "Arrow3D",
-    "Glow",  # Not a Manim CE class
+    "Glow",        # Not a Manim CE class
+    "Bubble",      # Not a Manim CE class
+    "SpeechBubble",# Not a Manim CE class
+    "AnnotationDot",# Not a Manim CE class
+    "Sparkle",     # Not a Manim CE class
 }
 
 # Only allowed imports
@@ -57,10 +61,24 @@ HALLUCINATED_ANIMATIONS = {
     "Expand": "GrowFromCenter",
     "Collapse": "ShrinkToCenter",
     "Morph": "Transform",
-    "ShowCreation": "Create",  # Deprecated in newer Manim
-    "WiggleOutThenIn": "Wiggle",  # Common LLM hallucination - real class is Wiggle
-    "FadeInFrom": "FadeIn",  # Doesn't exist, use FadeIn with shift
-    "GrowFromEdge": "GrowFromCenter",  # Wrong API, use GrowFromCenter or GrowFromPoint
+    "ShowCreation": "Create",    # Deprecated in newer Manim
+    "WiggleOutThenIn": "Wiggle", # Common LLM hallucination
+    "FadeInFrom": "FadeIn",      # Doesn't exist
+    "FadeOutTo": "FadeOut",      # Doesn't exist
+    "GrowFromEdge": "GrowFromCenter",
+    "Bounce": "Wiggle",          # Doesn't exist in Manim CE
+    "Pulse": "Flash",            # Doesn't exist in Manim CE
+    "Blink": "Flash",            # Doesn't exist in Manim CE
+    "Appear": "FadeIn",          # Doesn't exist in Manim CE
+    "Disappear": "FadeOut",      # Doesn't exist in Manim CE
+    "Spotlight": "Indicate",     # Doesn't exist in Manim CE
+    "TypeWrite": "Write",        # Doesn't exist in Manim CE
+    "SweepIn": "FadeIn",         # Doesn't exist in Manim CE
+    "SweepOut": "FadeOut",       # Doesn't exist in Manim CE
+    "Highlight": "Indicate",     # Doesn't exist in Manim CE
+    "DrawBorder": "DrawBorderThenFill",  # Wrong name
+    "AnimateIn": "FadeIn",       # Doesn't exist in Manim CE
+    "AnimateOut": "FadeOut",     # Doesn't exist in Manim CE
 }
 
 
@@ -240,6 +258,12 @@ def static_validate(source: str) -> Tuple[bool, str]:
         ("Matrix(", "Matrix requires LaTeX. Use VGroups of Text or Table instead."),
         ("SVGMobject(", "SVGMobject is not allowed. External assets like SVG files do not exist. Create objects using native Manim shapes."),
         ("ImageMobject(", "ImageMobject is not allowed. External assets do not exist. Create objects using native Manim shapes."),
+        # HALLUCINATED CLASSES (don't exist in Manim CE)
+        ("Bubble(", "Bubble is not a Manim CE class. Use RoundedRectangle() + Text() instead."),
+        ("SpeechBubble(", "SpeechBubble is not a Manim CE class. Use RoundedRectangle() + Text() instead."),
+        ("AnnotationDot(", "AnnotationDot is not a Manim CE class. Use Dot() instead."),
+        ("Sparkle(", "Sparkle is not a Manim CE class. Use Flash() or GrowFromCenter() instead."),
+        ("Grid(", "Grid is not a standalone Manim class. Use NumberPlane() or VGroup of Lines instead."),
         # HALLUCINATED ANIMATIONS (don't exist in Manim)
         ("ZoomIn(", "ZoomIn is not a real Manim animation. Use GrowFromCenter() or FadeIn() instead."),
         ("ZoomOut(", "ZoomOut is not a real Manim animation. Use ShrinkToCenter() or FadeOut() instead."),
@@ -343,7 +367,27 @@ def runtime_smoke_test(source: str, timeout_seconds: int = 10) -> Tuple[bool, st
     # Create a test harness that imports and instantiates the scene
     test_harness = '''
 import sys
+import types
 sys.path.insert(0, '.')
+
+# ── Mock manim_templates BEFORE importing gen_scene ──────────────────────
+# Prevents ImportError when generated code does `from manim_templates import *`
+if 'manim_templates' not in sys.modules:
+    _mock_mt = types.ModuleType('manim_templates')
+    class Colors:
+        GREEN = "#4CAF50"; BLUE = "#2196F3"; RED = "#F44336"
+        YELLOW = "#FFEB3B"; CYAN = "#00BCD4"; WHITE = "#FFFFFF"
+        ORANGE = "#FF9800"; PURPLE = "#9C27B0"; GOLD = "#FFD700"
+        DARK = "#1A1A2E"; LIGHT = "#E8EAF6"; ACCENT = "#64B5F6"
+        ENERGY = "#FFD700"; LIGHT_BEAM = "#FFFDE7"; MOLECULE = "#4CAF50"
+        ELECTRON = "#2196F3"; TEXT = "#FFFFFF"; IMPORTANT = "#F44336"
+    _mock_mt.Colors = Colors
+    _mock_mt.phasor_to_sine_animation = lambda *a, **kw: None
+    _mock_mt.static_sine_wave = lambda *a, **kw: None
+    _mock_mt.get_template_for_concept = lambda *a, **kw: None
+    sys.modules["manim_templates"] = _mock_mt
+else:
+    Colors = sys.modules["manim_templates"].Colors
 
 # Minimal Manim mock for smoke testing (faster than full Manim)
 class MockScene:
@@ -370,6 +414,7 @@ class ColorfulScene(MockScene):
     def __init__(self):
         super().__init__()
         self.captions = []
+        self.title = None
     def show_title(self, text, **kw): return None
     def play_caption(self, text, **kw): pass
     def create_section_header(self, text, **kw): return None
@@ -379,7 +424,11 @@ class ColorfulScene(MockScene):
     def create_glowing_dot(self, *a, **kw): return MockScene()
     def add_particle_bg(self, *a, **kw): pass
     def show_exam_tip(self, *a, **kw): pass
+    def clamp_to_screen(self, obj, **kw): return obj
+    def safe_next_to(self, *a, **kw): return None
+    def arrange_column(self, *a, **kw): return None
 builtins.ColorfulScene = ColorfulScene
+builtins.Colors = Colors
 
 try:
     # Import the generated module
@@ -427,6 +476,12 @@ finally:
     
     try:
         with tempfile.TemporaryDirectory() as tmpdir:
+            # Copy manim_templates.py into tmpdir so generated code can import it
+            _mt_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'manim_templates.py')
+            if os.path.exists(_mt_src):
+                import shutil as _shutil
+                _shutil.copy2(_mt_src, os.path.join(tmpdir, 'manim_templates.py'))
+
             # Write the generated code
             gen_path = os.path.join(tmpdir, "gen_scene.py")
             with open(gen_path, "w", encoding="utf-8") as f:
