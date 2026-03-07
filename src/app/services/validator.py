@@ -167,21 +167,21 @@ def auto_fix_common_issues(source: str) -> str:
         return "Circle(radius=0.5, color=Colors.CYAN, fill_opacity=0.4)"
     fixed = re.sub(r'ImageMobject\([^)]*\)', replace_image_mobject, fixed)
     
-    # 9. Fix long text strings that will overflow (truncate to ~45 chars)
+    # 9. Fix long text strings that will overflow (truncate to ~65 chars for Text())
     def truncate_long_text(match):
         full_match = match.group(0)
         text_content = match.group(1)
-        if len(text_content) > 50:
-            # Truncate and add ellipsis
-            truncated = text_content[:47] + "..."
+        limit = 65
+        if len(text_content) > limit:
+            truncated = text_content[:limit - 3] + "..."
             return full_match.replace(text_content, truncated)
         return full_match
     
-    # Fix Text() with long strings
-    fixed = re.sub(r'Text\(\s*["\']([^"\']{51,})["\']', truncate_long_text, fixed)
+    # Fix Text() with long strings (>65 chars risks overflow)
+    fixed = re.sub(r'Text\(\s*["\']([^"\']{66,})["\']', truncate_long_text, fixed)
     
-    # 10. Fix play_caption with long strings
-    fixed = re.sub(r'play_caption\(\s*["\']([^"\']{51,})["\']', truncate_long_text, fixed)
+    # 10. play_caption: no length truncation — create_caption() word-wraps automatically
+    # (removing this regex means long captions wrap to multiple lines instead of being cut off)
     
     # 11. Fix show_title with long strings (MAX 25 chars!)
     def truncate_title(match):

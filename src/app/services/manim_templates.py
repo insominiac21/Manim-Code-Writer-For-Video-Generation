@@ -204,13 +204,9 @@ class ColorfulScene(Scene):
         Create a caption for educational explanations.
         NEET-focused: Clear, readable, properly bounded.
         """
-        # STRICT: Wrap text to 55 chars max to stay on screen
-        wrapped_text = textwrap.fill(str(text_str), width=55)
-        
-        # Limit to 2 lines max for readability
-        lines = wrapped_text.splitlines()
-        if len(lines) > 2:
-            wrapped_text = chr(10).join(lines[:2]) + "..."
+        # Word-wrap at 50 chars. textwrap.fill never breaks mid-word.
+        # No line cap — all content must show; create_caption scales down if needed.
+        wrapped_text = textwrap.fill(str(text_str), width=50)
         
         # Create caption with clear font
         caption = Text(wrapped_text, font_size=font_size, color=color, font="Arial", line_spacing=0.9)
@@ -1493,25 +1489,24 @@ class GeneratedScene(ColorfulScene):
         # SCENE 2: Sodium Chloride (Ionic)
         # ═══════════════════════════════════════
         self.next_section("Ionic Bonding")
-        scene_title = Text("Ionic Bonding: Na + Cl", font_size=36, color=Colors.HOT_PINK).to_edge(UP)
+        scene_title = Text("Ionic Bonding: Na + Cl", font_size=30, color=Colors.HOT_PINK).to_edge(UP, buff=0.3)
+        if scene_title.width > 11: scene_title.scale(11 / scene_title.width)
         self.play(Write(scene_title))
         
-        # Atoms
-        na_atom = VGroup(
-            Circle(radius=0.5, color=Colors.LT_GRAY, fill_opacity=0.5),
-            Text("Na", font_size=24)
-        ).move_to(LEFT * 3)
+        # Atoms — use ASCII labels (Unicode superscripts don't render on server fonts)
+        na_circ = Circle(radius=0.5, color=Colors.LT_GRAY, fill_opacity=0.5).move_to(LEFT * 3)
+        na_lbl  = Text("Na", font_size=22, color=Colors.WHITE).move_to(na_circ.get_center())
+        na_atom = VGroup(na_circ, na_lbl)
         
-        na_electron = Dot(color=Colors.CYAN).move_to(na_atom.get_center() + RIGHT*1.2)
-        na_orbit = Circle(radius=1.2, color=Colors.LT_GRAY, stroke_opacity=0.5).move_to(na_atom)
+        na_electron = Dot(color=Colors.CYAN).move_to(na_circ.get_center() + RIGHT*1.2)
+        na_orbit = Circle(radius=1.2, color=Colors.LT_GRAY, stroke_opacity=0.5).move_to(na_circ.get_center())
         na_group = VGroup(na_atom, na_orbit, na_electron)
         
-        cl_atom = VGroup(
-            Circle(radius=0.7, color=Colors.GREEN, fill_opacity=0.5),
-            Text("Cl", font_size=24)
-        ).move_to(RIGHT * 3)
+        cl_circ = Circle(radius=0.7, color=Colors.NEON_GREEN, fill_opacity=0.5).move_to(RIGHT * 3)
+        cl_lbl  = Text("Cl", font_size=22, color=Colors.WHITE).move_to(cl_circ.get_center())
+        cl_atom = VGroup(cl_circ, cl_lbl)
         # Cl has 7 valence, show open spot
-        cl_orbit = Circle(radius=1.4, color=Colors.GREEN, stroke_opacity=0.5).move_to(cl_atom)
+        cl_orbit = Circle(radius=1.4, color=Colors.NEON_GREEN, stroke_opacity=0.5).move_to(cl_circ.get_center())
         cl_electrons = VGroup(*[
              Dot(color=Colors.CYAN).move_to(cl_orbit.point_at_angle(a)) 
              for a in [0, PI/4, PI/2, 3*PI/4, PI, 5*PI/4, 3*PI/2]
@@ -1546,7 +1541,6 @@ class GeneratedScene(ColorfulScene):
             cl_group.animate.shift(LEFT*1.5),
             na_plus.animate.shift(RIGHT*1.5),
             cl_minus.animate.shift(LEFT*1.5),
-            na_electron.animate.shift(LEFT*1.5)
         )
         
         bond_text = Text("Ionic Bond", font_size=28, color=Colors.GOLD).next_to(VGroup(na_group, cl_group), DOWN)
