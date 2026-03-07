@@ -127,7 +127,17 @@ def safe_json_loads(text: str) -> dict:
     if stripped.startswith("HTTP 4") or stripped.startswith("HTTP 5"):
         raise RuntimeError(f"LLM API error: {stripped[:200]}")
 
-    # Detect truncation heuristic: try to rescue by finding last valid }
+    # ── PRE-PROCESS: fix illegal JSON escape sequences ────────────────────────
+    # The LLM writes Python-style \' to escape apostrophes inside JSON strings.
+    # \' is not a valid JSON escape — it breaks json.loads even with strict=False.
+    # Safe to replace globally: in valid JSON \' never appears legitimately.
+    text = text.replace("\\'", "'")
+    # Also fix lone \/ which some models emit (valid in JSON but causes issues in python)
+    # and stray \q, \a etc. that are invalid JSON escapes:
+    import re as _re
+    text = _re.sub(r'\\([^"\\/bfnrtu])', r'\1', text)
+
+    stripped = text.strip()
     # NOTE: We intentionally skip the brace-count trick because Python code
     # inside JSON string values contains { } chars that throw the counter off.
     stripped = stripped.lstrip()
