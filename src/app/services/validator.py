@@ -429,6 +429,11 @@ class ColorfulScene(MockScene):
     def arrange_column(self, *a, **kw): return None
 builtins.ColorfulScene = ColorfulScene
 builtins.Colors = Colors
+# Patch ColorfulScene + Colors back onto the manim_templates module entry so that
+# "from manim_templates import Colors, ColorfulScene" works without ImportError
+if 'manim_templates' in sys.modules:
+    sys.modules['manim_templates'].ColorfulScene = ColorfulScene
+    sys.modules['manim_templates'].Colors = Colors
 
 try:
     # Import the generated module
