@@ -37,7 +37,8 @@ FORBIDDEN_SUBSTRINGS = (
 # Banned Manim classes that cause NameError
 BANNED_MANIM_CLASSES = {
     "ParametricCurve", "Sphere", "Star", "Surface", "Cube", "Prism",
-    "ThreeDAxes", "Cylinder", "Cone", "Torus", "Mobius", "Arrow3D"
+    "ThreeDAxes", "Cylinder", "Cone", "Torus", "Mobius", "Arrow3D",
+    "Glow",  # Not a Manim CE class
 }
 
 # Only allowed imports
@@ -127,8 +128,26 @@ def auto_fix_common_issues(source: str) -> str:
     fixed = re.sub(r'\.scale\(([4-9]\.\d|[1-9]\d)\)', '.scale(2.5)', fixed)
 
     # 8b. self.title and self.captions are now valid ColorfulScene attributes; preserve them.
-    # Only fix the truly unknown attrs (not title, captions).
     fixed = re.sub(r'FadeOut\(self\.undefined_attr[^)]*\)', 'FadeOut(*self.mobjects)', fixed)
+
+    # 8c. Strip invalid Flash/ShowPassingFlash kwargs that cause TypeError at runtime.
+    #     Flash only accepts: flash_radius, num_lines, line_length, color, run_time, rate_func
+    #     LLMs often hallucinate: scale_factor, glow_radius, intensity, size, opacity
+    fixed = re.sub(r'(Flash\([^)]*?),?\s*scale_factor\s*=\s*[\d.]+', r'\1', fixed)
+    fixed = re.sub(r'(Flash\([^)]*?),?\s*glow_radius\s*=\s*[\d.]+', r'\1', fixed)
+    fixed = re.sub(r'(Flash\([^)]*?),?\s*intensity\s*=\s*[\d.]+', r'\1', fixed)
+    fixed = re.sub(r'(Flash\([^)]*?),?\s*opacity\s*=\s*[\d.]+', r'\1', fixed)
+    # Also strip from ShowPassingFlash
+    fixed = re.sub(r'(ShowPassingFlash\([^)]*?),?\s*scale_factor\s*=\s*[\d.]+', r'\1', fixed)
+    # Strip invalid Glow() calls (Glow is not a Manim CE class — replace with nothing)
+    fixed = re.sub(r'\bglow\s*=\s*Glow\([^)]*\)\s*;?\s*FadeIn\(glow\)', '', fixed)
+    fixed = re.sub(r'Glow\([^)]*\)', 'VGroup()', fixed)
+
+    # 8d. Strip ImageMobject calls (no assets on server — replace with placeholder circle)
+    def replace_image_mobject(match):
+        fixes_applied.append("Replaced ImageMobject with placeholder Circle")
+        return "Circle(radius=0.5, color=Colors.CYAN, fill_opacity=0.4)"
+    fixed = re.sub(r'ImageMobject\([^)]*\)', replace_image_mobject, fixed)
     
     # 9. Fix long text strings that will overflow (truncate to ~45 chars)
     def truncate_long_text(match):
