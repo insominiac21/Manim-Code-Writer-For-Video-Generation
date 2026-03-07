@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MentorBoxAI - AI-powered educational video generator for NEET/JEE exam preparation">
+  <title>MentorBoxAI - Educational Video Generator</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">🎬</span>
+        <span class="logo-text">MentorBox<span class="accent">AI</span></span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Generator Form -->
+      <section class="generator-card">
+        <h1 class="card-title">Generate Educational Video</h1>
+        <p class="card-subtitle">Create animated explainers for NEET/JEE concepts in seconds</p>
+
+        <form id="generateForm" class="form">
+          <div class="form-group">
+            <label for="concept">Concept / Topic</label>
+            <input type="text" id="concept" name="concept"
+              placeholder="e.g., Newton's First Law, Photosynthesis, DNA Replication" required>
+          </div>
+
+          <div class="form-group">
+            <label for="goal">Learning Goal</label>
+            <textarea id="goal" name="goal"
+              placeholder="What should students understand after watching? (e.g., Explain how light energy converts to chemical energy)"
+              required></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="duration">Duration</label>
+              <div class="range-wrapper">
+                <input type="range" id="duration" name="duration" min="15" max="60" value="30">
+                <span id="durationValue" class="range-value">30s</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="maxScenes">Max Scenes</label>
+              <select id="maxScenes" name="maxScenes">
+                <option value="3">3 scenes</option>
+                <option value="4">4 scenes</option>
+                <option value="5" selected>5 scenes</option>
+                <option value="6">6 scenes</option>
+                <option value="8">8 scenes</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="detailLevel">Detail Level</label>
+              <select id="detailLevel" name="detailLevel">
+                <option value="short">Short (Quick overview)</option>
+                <option value="medium" selected>Medium (Balanced)</option>
+                <option value="detailed">Detailed (In-depth)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="style">Visual Style</label>
+              <select id="style" name="style">
+                <option value="visual_explainer" selected>Visual Explainer</option>
+                <option value="minimal">Minimal</option>
+                <option value="diagrammatic">Diagrammatic</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="speakerNotes" name="speakerNotes" checked>
+              <span class="checkmark"></span>
+              Include speaker notes for narration
+            </label>
+          </div>
+
+          <button type="submit" class="btn-generate" id="submitBtn">
+            <span class="btn-icon">✨</span>
+            Generate Video
+          </button>
+        </form>
+      </section>
+
+      <!-- Jobs List -->
+      <section class="jobs-section" id="jobsSection">
+        <div class="section-header">
+          <h2 class="section-title">Your Videos</h2>
+          <button id="clearHistoryBtn" class="btn-text" title="Clear local history">🗑️ Clear Cache</button>
+        </div>
+        <div id="jobsList" class="jobs-list">
+          <div class="empty-state">
+            <span class="empty-icon">📽️</span>
+            <p>No videos generated yet. Create your first one above!</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Video Modal -->
+    <div id="videoModal" class="modal">
+      <div class="modal-content">
+        <button class="modal-close" id="closeModal">&times;</button>
+        <h3 id="modalTitle">Video Title</h3>
+        <video id="videoPlayer" controls>
+          Your browser does not support the video tag.
+        </video>
+        <div class="modal-actions">
+          <a id="downloadLink" class="btn-download" download>Download MP4</a>
+          <button id="regenerateBtn" class="btn-regenerate">Regenerate</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plan Preview Modal -->
+    <div id="planModal" class="modal">
+      <div class="modal-content modal-wide">
+        <button class="modal-close" id="closePlanModal">&times;</button>
+        <h3 id="planModalTitle">Animation Plan</h3>
+        <div class="tabs">
+          <button class="tab active" data-tab="plan">📋 JSON Plan</button>
+          <button class="tab" data-tab="code">🐍 Manim Code</button>
+        </div>
+        <div class="tab-content">
+          <pre id="planContent" class="code-block"></pre>
+          <pre id="codeContent" class="code-block" style="display:none;"></pre>
+        </div>
+        <div class="modal-actions">
+          <button id="copyPlanBtn" class="btn-download">📋 Copy JSON</button>
+          <button id="copyCodeBtn" class="btn-regenerate">📋 Copy Code</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Built with <span class="heart">♥</span> for NEET/JEE aspirants</p>
+      <p class="footer-sub">LLM + Manim Renderer</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
