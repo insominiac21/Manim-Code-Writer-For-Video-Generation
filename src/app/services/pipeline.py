@@ -55,7 +55,7 @@ def call_generator(prompt: str, expect_json: bool = True, system_prompt: str = N
         "You are an expert educational content creator and Manim animation developer. "
         "Always respond with valid JSON when asked for structured output."
     )
-    max_tokens = int(os.getenv("LLM_GENERATOR_MAX_TOKENS", "4096"))
+    max_tokens = int(os.getenv("LLM_GENERATOR_MAX_TOKENS", "8000"))
     temperature = float(os.getenv("LLM_GENERATOR_TEMPERATURE", "0.01"))
     content = call_groq(prompt, system_prompt=sys_prompt, max_tokens=max_tokens, temperature=temperature)
     print(f"[DEBUG] Groq LLM Response (first 500 chars): {str(content)[:500] if content else 'EMPTY'}")
@@ -70,16 +70,26 @@ def layer1_understand(concept: str, goal: str) -> dict:
 
 
 def layer2_plan(understanding: dict, duration: int, max_scenes: int) -> dict:
-    """Layer 2: Create video plan"""
+    """Layer 2: Create video plan — retries with fewer scenes if JSON is truncated."""
     from .prompts import LAYER2_PROMPT
-    estimated_per_scene = duration // max_scenes if max_scenes > 0 else duration
-    prompt = LAYER2_PROMPT.format(
-        understanding=json.dumps(understanding, indent=2),
-        duration=duration,
-        max_scenes=max_scenes,
-        estimated_per_scene=estimated_per_scene
-    )
-    return safe_json_loads(call_generator(prompt, expect_json=True))
+
+    for attempt_scenes in [max_scenes, min(max_scenes, 3), 2]:
+        estimated_per_scene = duration // attempt_scenes if attempt_scenes > 0 else duration
+        if attempt_scenes < max_scenes:
+            print(f"[Layer2] Retrying plan with {attempt_scenes} scenes (JSON truncation fallback)")
+        prompt = LAYER2_PROMPT.format(
+            understanding=json.dumps(understanding, indent=2),
+            duration=duration,
+            max_scenes=attempt_scenes,
+            estimated_per_scene=estimated_per_scene
+        )
+        result = safe_json_loads(call_generator(prompt, expect_json=True))
+        if "error" not in result:
+            return result
+        if attempt_scenes == 2:
+            # All retries exhausted
+            return result
+    return result
 def safe_json_loads(text: str) -> dict:
     """Robust JSON parsing with multiple fallback strategies to handle LLM artifacts."""
     if not text:
@@ -89,6 +99,21 @@ def safe_json_loads(text: str) -> dict:
     stripped = text.strip()
     if stripped.startswith("HTTP 4") or stripped.startswith("HTTP 5"):
         raise RuntimeError(f"LLM API error: {stripped[:200]}")
+
+    # Detect truncation: JSON starts but never closes properly
+    stripped = stripped.lstrip()
+    if stripped.startswith('{') and stripped.count('{') > stripped.count('}'):
+        # Attempt to close any open arrays/objects so we get partial but parseable JSON
+        open_braces = stripped.count('{') - stripped.count('}')
+        open_brackets = stripped.count('[') - stripped.count(']')
+        padded = stripped.rstrip(',').rstrip()
+        padded += ']' * max(0, open_brackets) + '}' * max(0, open_braces)
+        try:
+            result = json.loads(padded, strict=False)
+            print(f"[JSON] Recovered truncated JSON ({open_braces} unclosed braces)")
+            return result
+        except Exception:
+            pass
 
     # Clean up common markdown block issues
     text = text.strip()
