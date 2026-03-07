@@ -335,13 +335,14 @@ class ColorfulScene(Scene):
         Guarantees no vertical overlap. Returns VGroup.
         group = self.arrange_column(label1, label2, label3, start_y=1.8)
         """
+        mobs = list(mobjects)
         y = start_y
-        for mob in mobjects:
+        for i, mob in enumerate(mobs):
             mob.move_to([center_x, y, 0])
             self.clamp_to_screen(mob)
-            y -= (mob.height / 2 + spacing + mobjects[list(mobjects).index(mob) + 1].height / 2
-                  if list(mobjects).index(mob) + 1 < len(mobjects) else 0)
-        return VGroup(*mobjects)
+            if i + 1 < len(mobs):
+                y -= mob.height / 2 + spacing + mobs[i + 1].height / 2
+        return VGroup(*mobs)
 
     def stack_labels(self, labels, anchor_obj, direction=DOWN, buff=0.35, spacing=0.35):
         """
@@ -724,7 +725,7 @@ class ColorfulScene(Scene):
         if title.width > 12: title.scale(12 / title.width)
 
         self.play(Write(title))
-        self.play(LaggedStart(*[Create(b) for b in bars[::3]], lag_ratio=0.2), run_time=1.2)
+        self.play(LaggedStart(*[GrowFromCenter(b) for b in bars], lag_ratio=0.15), run_time=1.5)
         self.wait(1.5)
         return VGroup(title, bars)
 
