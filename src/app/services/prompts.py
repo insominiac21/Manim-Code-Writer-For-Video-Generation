@@ -593,7 +593,7 @@ for _ in range(3):
     self.play(Rotate(obj, angle=PI, about_point=obj.get_center()), run_time=0.4)
 
 **I. LAGGED START FOR SEQUENTIAL REVEALS (any list of objects):**
-items = [Text(f"Step {i+1}", font_size=20, color=Colors.CYAN)
+items = [Text(f"Step {{i+1}}", font_size=20, color=Colors.CYAN)
          .move_to(UP*(1.5 - i*1.0)) for i in range(4)]
 self.play(LaggedStart(*[FadeIn(item, shift=RIGHT) for item in items], lag_ratio=0.3))
 
