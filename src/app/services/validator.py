@@ -182,6 +182,28 @@ def auto_fix_common_issues(source: str) -> str:
     
     # 10. play_caption: no length truncation — create_caption() word-wraps automatically
     # (removing this regex means long captions wrap to multiple lines instead of being cut off)
+
+    # 10b. Strip Unicode subscripts/superscripts — EC2 manim font cannot render them.
+    # Replace with ASCII equivalents so Text() renders correctly.
+    _unicode_map = {
+        '\u00b2': '2', '\u00b3': '3', '\u00b9': '1',
+        '\u2070': '0', '\u2071': '1', '\u2074': '4', '\u2075': '5',
+        '\u2076': '6', '\u2077': '7', '\u2078': '8', '\u2079': '9',
+        '\u207a': '+', '\u207b': '-', '\u207c': '=', '\u207f': 'n',
+        '\u2080': '0', '\u2081': '1', '\u2082': '2', '\u2083': '3',
+        '\u2084': '4', '\u2085': '5', '\u2086': '6', '\u2087': '7',
+        '\u2088': '8', '\u2089': '9', '\u208a': '+', '\u208b': '-',
+        '\u00b0': 'deg',  # degree sign
+        '\u03b1': 'alpha', '\u03b2': 'beta', '\u03b3': 'gamma',
+        '\u03b4': 'delta', '\u03bb': 'lambda', '\u03bc': 'mu',
+        '\u03c0': 'PI', '\u03a9': 'Omega', '\u03a3': 'Sigma',
+        '\u2192': '->', '\u2190': '<-', '\u2194': '<->',
+        '\u00d7': 'x', '\u00f7': '/',
+    }
+    for uni_char, ascii_rep in _unicode_map.items():
+        if uni_char in fixed:
+            fixed = fixed.replace(uni_char, ascii_rep)
+            fixes_applied.append(f"Replaced Unicode char U+{ord(uni_char):04X} with '{ascii_rep}'")
     
     # 11. Fix show_title with long strings (MAX 25 chars!)
     def truncate_title(match):

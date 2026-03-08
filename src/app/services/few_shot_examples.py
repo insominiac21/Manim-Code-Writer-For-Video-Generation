@@ -427,7 +427,7 @@ class GeneratedScene(ColorfulScene):
         glucose.move_to(LEFT * 3)
         
         # Label BELOW
-        glucose_label = Text("Glucose (C₆H₁₂O₆)", font_size=18, color=Colors.BRIGHT_YELLOW)
+        glucose_label = Text("Glucose (C6H12O6)", font_size=18, color=Colors.BRIGHT_YELLOW)
         glucose_label.next_to(glucose, DOWN, buff=0.3)
         
         self.play(GrowFromCenter(glucose), Write(glucose_label))
