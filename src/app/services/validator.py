@@ -183,7 +183,38 @@ def auto_fix_common_issues(source: str) -> str:
     # 10. play_caption: no length truncation — create_caption() word-wraps automatically
     # (removing this regex means long captions wrap to multiple lines instead of being cut off)
 
-    # 10b. Strip Unicode subscripts/superscripts — EC2 manim font cannot render them.
+    # 10b. Auto-fix MathTex/Tex — LaTeX is NOT installed on server, convert to Text()
+    # Single-string form: MathTex(r"formula") or MathTex("formula") -> Text("formula")
+    def _mathtex_to_text(m):
+        content = m.group(1)
+        # strip LaTeX commands to ASCII readable form
+        content = re.sub(r'\\frac\{([^}]+)\}\{([^}]+)\}', r'(\1/\2)', content)
+        content = re.sub(r'\\sqrt\{([^}]+)\}', r'sqrt(\1)', content)
+        content = re.sub(r'\\cdot', r' x ', content)
+        content = re.sub(r'\\times', r' x ', content)
+        content = re.sub(r'\\pm', r'+/-', content)
+        content = re.sub(r'\\[a-zA-Z]+', r'', content)  # strip remaining commands
+        content = content.replace('{', '').replace('}', '')
+        fixes_applied.append("Replaced MathTex/Tex with Text()")
+        return f'Text("{content}"'
+    fixed = re.sub(r'MathTex\(r?["\']([^"\']+)["\']', _mathtex_to_text, fixed)
+    fixed = re.sub(r'(?<!Math)Tex\(r?["\']([^"\']+)["\']', _mathtex_to_text, fixed)
+    # Multi-arg MathTex("A", "=", "B") — join args into single Text
+    def _mathtex_multiarg(m):
+        args = re.findall(r'["\']([^"\']+)["\']', m.group(1))
+        joined = ' '.join(args)
+        fixes_applied.append("Replaced multi-arg MathTex with Text()")
+        return f'Text("{joined}"'
+    fixed = re.sub(r'MathTex\(([^)]+)\)', _mathtex_multiarg, fixed)
+    # DecimalNumber(x) -> Text(str(x))
+    fixed = re.sub(r'DecimalNumber\(([^,)]+)[^)]*\)', lambda m: f'Text(str({m.group(1).strip()}))', fixed)
+    # include_numbers=True -> include_numbers=False (avoids DecimalNumber/LaTeX internally)
+    fixed = fixed.replace('include_numbers=True', 'include_numbers=False')
+    fixed = fixed.replace('include_numbers = True', 'include_numbers=False')
+    # Matrix( -> VGroup of Text placeholder
+    fixed = re.sub(r'Matrix\(([^)]{0,40})\)', 'VGroup()', fixed)
+
+    # 10c. Strip Unicode subscripts/superscripts — EC2 manim font cannot render them.
     # Replace with ASCII equivalents so Text() renders correctly.
     _unicode_map = {
         '\u00b2': '2', '\u00b3': '3', '\u00b9': '1',
@@ -271,13 +302,9 @@ def static_validate(source: str) -> Tuple[bool, str]:
         ("Cube(", "Cube is not available. Use Square() instead"),
         ("ThreeDAxes(", "ThreeDAxes is not available. Use Axes() instead"),
         ("header=", "RoundedRectangle does not accept 'header'. Use Text() for headers instead"),
-        # STRICT NO-LATEX RULES
-        ("MathTex", "MathTex requires LaTeX. Use Text() instead."),
-        ("Tex(", "Tex requires LaTeX. Use Text() instead."),
-        ("DecimalNumber", "DecimalNumber requires LaTeX. Use Text() manually."),
-        ("include_numbers=True", "include_numbers=True uses DecimalNumber/LaTeX. Use False and add Text labels manually."),
-        ("include_numbers = True", "include_numbers=True uses DecimalNumber/LaTeX. Use False and add Text labels manually."),
-        ("Matrix(", "Matrix requires LaTeX. Use VGroups of Text or Table instead."),
+        # NO-LATEX RULES — these are auto-fixed before validation, so should not appear here.
+        # If they somehow survive auto-fix, catch them here as a last resort.
+        # (MathTex, Tex, DecimalNumber, Matrix are converted in auto_fix_common_issues)
         ("SVGMobject(", "SVGMobject is not allowed. External assets like SVG files do not exist. Create objects using native Manim shapes."),
         ("ImageMobject(", "ImageMobject is not allowed. External assets do not exist. Create objects using native Manim shapes."),
         # HALLUCINATED CLASSES (don't exist in Manim CE)

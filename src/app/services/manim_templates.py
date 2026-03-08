@@ -988,19 +988,19 @@ class GeneratedScene(Scene):
         scene_title = Text("Applying the Formula", font_size=36, color=TEAL)
         scene_title.to_edge(UP)
         
-        formula = MathTex(r"a^2 + b^2 = c^2", font_size=40)
+        formula = Text("a^2 + b^2 = c^2", font_size=40)
         formula.move_to(UP * 1)
         
-        step1 = MathTex(r"3^2 + 4^2 = c^2", font_size=36)
+        step1 = Text("3^2 + 4^2 = c^2", font_size=36)
         step1.next_to(formula, DOWN, buff=0.5)
         
-        step2 = MathTex(r"9 + 16 = c^2", font_size=36)
+        step2 = Text("9 + 16 = c^2", font_size=36)
         step2.next_to(step1, DOWN, buff=0.3)
         
-        step3 = MathTex(r"25 = c^2", font_size=36)
+        step3 = Text("25 = c^2", font_size=36)
         step3.next_to(step2, DOWN, buff=0.3)
         
-        step4 = MathTex(r"c = 5", font_size=40, color=GREEN)
+        step4 = Text("c = 5", font_size=40, color=GREEN)
         step4.next_to(step3, DOWN, buff=0.5)
         
         self.play(Write(scene_title))
@@ -1116,13 +1116,13 @@ class GeneratedScene(Scene):
         scene_title = Text("The Derivative", font_size=36, color=TEAL)
         scene_title.to_edge(UP)
         
-        original = MathTex(r"f(x) = x^2", font_size=40, color=BLUE)
+        original = Text("f(x) = x^2", font_size=40, color=BLUE)
         original.move_to(UP * 1)
         
         arrow = Arrow(UP * 0.5, DOWN * 0.5, color=WHITE)
         arrow.next_to(original, DOWN, buff=0.3)
         
-        derivative = MathTex(r"f'(x) = 2x", font_size=40, color=GREEN)
+        derivative = Text("f'(x) = 2x", font_size=40, color=GREEN)
         derivative.next_to(arrow, DOWN, buff=0.3)
         
         explanation = Text("The derivative gives the slope at any x", font_size=24)
@@ -1167,19 +1167,20 @@ class GeneratedScene(ColorfulScene):
         self.play(FadeOut(ball), FadeOut(floor))
         
         # --- SECOND LAW: F=ma ---
-        formula = MathTex("F", "=", "m", "a", font_size=72)
-        formula[0].set_color(Colors.HOT_PINK) # F
-        formula[2].set_color(Colors.CYAN)     # m
-        formula[3].set_color(Colors.NEON_GREEN) # a
-        
+        f_txt = Text("F", font_size=72, color=Colors.HOT_PINK).move_to(LEFT*1.5)
+        eq_txt = Text("=", font_size=72, color=Colors.WHITE).move_to(ORIGIN)
+        m_txt = Text("m", font_size=72, color=Colors.CYAN).move_to(RIGHT*1.2)
+        a_txt = Text("a", font_size=72, color=Colors.NEON_GREEN).move_to(RIGHT*2.4)
+        formula = VGroup(f_txt, eq_txt, m_txt, a_txt)
+
         self.play(Write(formula))
-        self.add_fun_pulse(formula[0]) # Pulse F
-        self.play_caption("Law 2: Force = Mass × Acceleration")
-        
+        self.add_fun_pulse(f_txt)
+        self.play_caption("Law 2: Force = Mass x Acceleration")
+
         # Demonstrate relationship
         self.play(
-            formula[0].animate.scale(1.5),
-            formula[3].animate.scale(1.5),
+            f_txt.animate.scale(1.5),
+            a_txt.animate.scale(1.5),
             run_time=1
         )
         self.play_caption("More Force = More Acceleration")
@@ -1351,14 +1352,14 @@ class GeneratedScene(Scene):
         scene_title = Text("Newton's Law of Gravitation", font_size=36, color=TEAL)
         scene_title.to_edge(UP)
         
-        formula = MathTex(r"F = G \\frac{m_1 m_2}{r^2}", font_size=48)
+        formula = Text("F = G * (m1 * m2) / r^2", font_size=36)
         formula.move_to(UP * 0.5)
         
         # Labels
         labels = VGroup(
             Text("F = Gravitational Force", font_size=20),
             Text("G = Gravitational Constant", font_size=20),
-            Text("m₁, m₂ = Masses of objects", font_size=20),
+            Text("m1, m2 = Masses of objects", font_size=20),
             Text("r = Distance between centers", font_size=20)
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.2)
         labels.move_to(DOWN * 1.5)
