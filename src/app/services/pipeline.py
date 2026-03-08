@@ -606,6 +606,20 @@ _RENDER_LOCK = threading.Lock()
 _RENDER_TIMEOUT = 360  # seconds per render attempt (raised from 240)
 
 
+# Memory cap for render subprocess: 1.5 GB virtual address space.
+# Prevents a runaway render from OOM-killing the whole uvicorn server.
+# With 2 GB swap on EC2, this gives the server ample headroom.
+import resource as _resource
+
+def _set_render_memory_limit():
+    """Called as preexec_fn in render subprocess (Linux only)."""
+    try:
+        limit = 1536 * 1024 * 1024  # 1.5 GB
+        _resource.setrlimit(_resource.RLIMIT_AS, (limit, limit))
+    except Exception:
+        pass  # non-Linux or permission denied — silently ignore
+
+
 def _try_render_direct(job_id: str, manim_file: Path) -> Optional[str]:
     """Try rendering using direct manim command."""
     try:
@@ -618,7 +632,7 @@ def _try_render_direct(job_id: str, manim_file: Path) -> Optional[str]:
             [manim_bin, "-qh", str(manim_file), "GeneratedScene",
              "--media_dir", str(VIDEO_DIR / job_id), "--disable_caching"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=_RENDER_TIMEOUT,
-            env=env
+            env=env, preexec_fn=_set_render_memory_limit
         )
         if result.returncode == 0:
             return _find_and_copy_video(job_id)
@@ -647,7 +661,7 @@ def _try_render_python_module(job_id: str, manim_file: Path) -> Optional[str]:
             [python_bin, "-m", "manim", "-qh", str(manim_file), "GeneratedScene",
              "--media_dir", str(VIDEO_DIR / job_id), "--disable_caching"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=_RENDER_TIMEOUT,
-            env=env
+            env=env, preexec_fn=_set_render_memory_limit
         )
         if result.returncode == 0:
             return _find_and_copy_video(job_id)
