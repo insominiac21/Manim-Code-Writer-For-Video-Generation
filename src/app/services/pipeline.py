@@ -603,7 +603,7 @@ def _resolve_python_bin() -> str:
 # Global render lock — prevents concurrent renders from starving each other on single CPU EC2
 import threading
 _RENDER_LOCK = threading.Lock()
-_RENDER_TIMEOUT = 360  # seconds per render attempt (raised from 240)
+_RENDER_TIMEOUT = 180  # seconds per render attempt (-qm is ~4x faster than -qh)
 
 
 # Memory cap for render subprocess: 1.5 GB virtual address space.
@@ -629,7 +629,7 @@ def _try_render_direct(job_id: str, manim_file: Path) -> Optional[str]:
         manim_bin = _resolve_manim_bin()
         print(f"[Render-Direct] Using manim={manim_bin}")
         result = subprocess.run(
-            [manim_bin, "-qh", str(manim_file), "GeneratedScene",
+            [manim_bin, "-qm", str(manim_file), "GeneratedScene",
              "--media_dir", str(VIDEO_DIR / job_id), "--disable_caching"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=_RENDER_TIMEOUT,
             env=env, preexec_fn=_set_render_memory_limit
@@ -658,7 +658,7 @@ def _try_render_python_module(job_id: str, manim_file: Path) -> Optional[str]:
         python_bin = _resolve_python_bin()
         print(f"[Render-Python] Using python={python_bin}")
         result = subprocess.run(
-            [python_bin, "-m", "manim", "-qh", str(manim_file), "GeneratedScene",
+            [python_bin, "-m", "manim", "-qm", str(manim_file), "GeneratedScene",
              "--media_dir", str(VIDEO_DIR / job_id), "--disable_caching"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=_RENDER_TIMEOUT,
             env=env, preexec_fn=_set_render_memory_limit
@@ -685,7 +685,7 @@ def _try_render_docker(job_id: str, manim_file: Path) -> Optional[str]:
              "-v", f"{manim_dir}:/manim",
              "-v", f"{VIDEO_DIR.absolute()}:/media",
              "manimcommunity/manim",
-             "manim", "-qh", f"/manim/{manim_file.name}", "GeneratedScene",
+             "manim", "-qm", f"/manim/{manim_file.name}", "GeneratedScene",
              "--media_dir", f"/media/{job_id}"],
             capture_output=True, text=True, timeout=240
         )
