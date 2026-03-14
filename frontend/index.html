@@ -63,6 +63,8 @@
             </div>
           </div>
 
+          <input type="hidden" id="speakerNotes" name="speakerNotes" value="true" checked>
+
           <button type="submit" class="btn-generate" id="submitBtn">
             <span class="btn-icon">✨</span>
             Generate Video
@@ -95,7 +97,10 @@
         </video>
         <div class="modal-actions">
           <a id="downloadLink" class="btn-download" download>Download MP4</a>
-          <button id="regenerateBtn" class="btn-regenerate">Regenerate</button>
+        </div>
+        <div id="speakerNotesPanel" class="speaker-notes-panel" style="display:none;">
+          <h4 class="notes-heading">🎤 Speaker Notes</h4>
+          <div id="speakerNotesList" class="notes-list"></div>
         </div>
       </div>
     </div>

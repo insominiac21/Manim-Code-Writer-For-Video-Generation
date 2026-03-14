@@ -196,6 +196,7 @@ async function generateVideo() {
         goal: document.getElementById('goal').value.trim(),
         duration_seconds: parseInt(durationSlider.value),
         max_scenes: parseInt(document.getElementById('maxScenes').value),
+        allow_speaker_notes: true,
         auto_render: true,
         fast_mode: true
     };
@@ -382,6 +383,22 @@ function openVideo(jobId) {
     videoPlayer.src = fullUrl(job.video_url);
     downloadLink.href = fullUrl(job.video_url);
     downloadLink.download = `${job.concept.replace(/\s+/g, '_')}.mp4`;
+
+    // Populate speaker notes
+    const notesPanel = document.getElementById('speakerNotesPanel');
+    const notesList = document.getElementById('speakerNotesList');
+    const narrations = job.narrations || (job.plan && job.plan.narrations) || [];
+    if (narrations && narrations.length > 0) {
+        notesList.innerHTML = narrations.map(n =>
+            `<div class="note-item">
+                <span class="note-scene">${escapeHtml(n.title || n.scene || '')}</span>
+                <span class="note-text">${escapeHtml(n.narration || n.text || '')}</span>
+            </div>`
+        ).join('');
+        notesPanel.style.display = 'block';
+    } else {
+        notesPanel.style.display = 'none';
+    }
 
     videoModal.classList.add('active');
 }
