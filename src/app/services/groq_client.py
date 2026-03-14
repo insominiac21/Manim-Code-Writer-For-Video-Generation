@@ -121,6 +121,12 @@ def _try_key(key: str, model: str, system_prompt: str, prompt: str,
         if r.status_code == 200:
             # Clear any cooldown on success
             _key_cooldown.pop(key, None)
+            # Log rate limit headers for monitoring
+            rl_remaining_req = r.headers.get("x-ratelimit-remaining-requests", "?")
+            rl_remaining_tok = r.headers.get("x-ratelimit-remaining-tokens", "?")
+            rl_reset_req     = r.headers.get("x-ratelimit-reset-requests", "?")
+            rl_limit_req     = r.headers.get("x-ratelimit-limit-requests", "?")
+            print(f"[Groq] Key ...{key[-6:]} | requests: {rl_remaining_req}/{rl_limit_req} remaining | tokens left: {rl_remaining_tok} | resets: {rl_reset_req}")
             return r.json()["choices"][0]["message"]["content"]
         elif r.status_code == 429:
             retry_after = r.headers.get("retry-after") or r.headers.get("x-ratelimit-reset-requests")

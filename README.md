@@ -23,7 +23,7 @@ Manim render jobs take 30–240 seconds and require persistent filesystem access
 
 ## Key Features
 - **6-Layer AI Pipeline:** Understanding → Storyboarding → Verification → Code Generation → Refinement → Validation & Auto-Fix
-- **Groq LLM (llama-3.3-70b-versatile):** Fast inference with 3-key round-robin rotation to avoid rate limits
+- **Groq LLM (llama-3.3-70b-versatile):** Fast inference with cooldown-aware multi-key rotation across up to 4 API keys
 - **Zero-LaTeX:** All visuals use `Text()` — crash-proof on any Linux server, no TeX installation needed
 - **22 Template Helpers:** Pre-built `ColorfulScene` methods the LLM calls directly (phasor animation, particle physics, energy charts, collision bursts, layout zones)
 - **Golden Few-Shot Examples:** NEET/JEE quality examples for biology, physics, chemistry, and maths
@@ -37,30 +37,40 @@ Manim render jobs take 30–240 seconds and require persistent filesystem access
 github-ready/
 ├── src/
 │   └── app/
-│       ├── api/v1/endpoints.py       # FastAPI endpoints
-│       ├── models/job.py             # Pydantic models
+│       ├── api/v1/endpoints.py       # FastAPI endpoints: generate, status, health
+│       ├── models/job.py             # Request/response models
 │       ├── services/
-│       │   ├── groq_client.py        # Groq API client with key rotation
-│       │   ├── pipeline.py           # 6-layer pipeline logic
-│       │   ├── prompts.py            # All prompt templates (L1-L5 + system)
-│       │   ├── few_shot_examples.py  # Golden few-shot examples (NEET quality)
-│       │   ├── validator.py          # AST static analysis + runtime smoke test
-│       │   └── reviewer.py          # Groq-powered auto-fix for validation errors
-│       ├── core/config.py           # Settings (Groq keys, AWS, LLM params)
-│       ├── main.py                  # FastAPI app entry
-│       └── __init__.py
-├── .env.example                     # Groq + AWS config template
-├── Dockerfile                       # Production container (python:3.11-slim + ffmpeg)
-├── README.md                        # Project documentation
-├── requirements.txt                 # Python dependencies
-├── bedrock_ping_test.py             # Groq key + AWS service connectivity check
-├── scripts/
-│   ├── start.sh                     # Server startup (validates keys first)
-│   └── deploy_aws.sh               # ECR build + ECS deploy
+│       │   ├── groq_client.py        # Groq client with key rotation + cooldown tracking
+│       │   ├── pipeline.py           # Main 6-layer generation pipeline
+│       │   ├── prompts.py            # Layer prompts + system instructions
+│       │   ├── validator.py          # Static/runtime validation and auto-fixes
+│       │   ├── reviewer.py           # LLM-powered repair pass for bad code
+│       │   └── manim_templates.py    # Shared scene helpers and visual utilities
+│       └── main.py                   # FastAPI app entry; serves frontend/
+├── frontend/                         # Primary web app served by FastAPI at /
+│   ├── index.html                    # Dashboard UI shell
+│   ├── app.js                        # Client-side polling, modals, speaker notes
+│   └── style.css                     # Frontend styles
+├── docs/                             # Static copy of the frontend for GitHub Pages
+│   ├── index.html
+│   ├── app.js
+│   └── style.css
 ├── output/
-│   ├── manim/                       # Generated Manim scripts
-│   └── videos/                      # Rendered MP4 files
-└── frontend/                        # Dashboard UI
+│   ├── manim/                        # Generated temporary Manim scripts
+│   └── videos/                       # Rendered MP4 outputs
+├── scripts/
+│   ├── start.sh                      # Linux/EC2 startup helper
+│   └── deploy_aws.sh                 # Deployment helper
+├── tests/                            # Test and validation scripts
+├── alembic/                          # DB migration scaffolding (future persistence work)
+├── .env.example                      # Environment template
+├── Dockerfile                        # Production container
+├── requirements.txt                  # Python dependencies
+├── bedrock_ping_test.py              # Legacy connectivity script name; currently used for service checks
+├── DESIGN.md                         # Product/design notes
+├── PROJECT_NOTES.md                  # Build and deployment notes
+├── UPDATED_ARCHITECTURE.md           # Expanded system architecture write-up
+└── README.md                         # Project documentation
 ```
 
 ---
@@ -144,6 +154,7 @@ Copy `.env.example` to `.env` and fill in:
 GROQ_API_KEY1=gsk_...
 GROQ_API_KEY2=gsk_...   # optional, for rate-limit rotation
 GROQ_API_KEY3=gsk_...   # optional
+GROQ_API_KEY4=gsk_...   # optional
 AWS_REGION=ap-south-1
 AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
@@ -187,7 +198,26 @@ All LLM calls go through **Groq** (`llama-3.3-70b-versatile`), not AWS Bedrock. 
 - Free tier sufficient for development and demo
 - Simple REST API with Python SDK
 
-The client (`groq_client.py`) rotates across up to 3 API keys to avoid per-key rate limits during heavy pipeline runs.
+### How round-robin API-key rotation works
+
+The client in `src/app/services/groq_client.py` supports **up to 4 Groq API keys** (`GROQ_API_KEY1` ... `GROQ_API_KEY4`).
+
+It does not blindly spam one key until failure. Instead:
+
+1. It loads all configured keys from `.env`.
+2. On each LLM call, it tries every key that is **not currently in cooldown**.
+3. If a key gets `HTTP 429`, it reads `retry-after` / `x-ratelimit-reset-requests` and marks that key unavailable until that cooldown expires.
+4. If a key gets `401` or `403`, it is put into a long cooldown to avoid wasting retries on a bad key.
+5. If all keys are cooling down, the client waits for the **soonest available key**, then retries.
+6. On success, the cooldown for that key is cleared and the response is returned immediately.
+
+This gives us a practical **round-robin + failover** strategy:
+- spreads traffic across multiple keys,
+- avoids hammering a rate-limited key,
+- survives temporary 429s during heavy 6-layer runs,
+- and prevents startup-time quota waste because keys are tested lazily only when first used.
+
+The client also logs Groq rate-limit response headers so we can monitor remaining request/token budget during real runs.
 
 ---
 
@@ -198,15 +228,16 @@ The client (`groq_client.py`) rotates across up to 3 API keys to avoid per-key r
 | Video too short | Increase `duration_seconds` |
 | Text overflow / overlap | Title max 25 chars, captions auto-wrapped at 40 chars |
 | Render fails | Must run on Linux (EC2/WSL). Windows render is not supported. |
-| Groq rate limit | Add a second/third API key to `.env` as `GROQ_API_KEY2`, `GROQ_API_KEY3` |
+| Groq rate limit | Add extra keys as `GROQ_API_KEY2`, `GROQ_API_KEY3`, `GROQ_API_KEY4`; the client rotates and waits on cooldown automatically |
 | EC2 port 8000 unreachable | Check Security Group inbound rule: TCP 8000, source 0.0.0.0/0 |
 
 ---
 
 ## Further Reading
 - [UPDATED_ARCHITECTURE.md](UPDATED_ARCHITECTURE.md) — full pipeline and component map
-- [docs/design.md](docs/) — hackathon design rationale
-- [docs/requirements.md](docs/) — feature requirements
+- [DESIGN.md](DESIGN.md) — product/design rationale
+- [requirements.md](requirements.md) — feature requirements
+- [PROJECT_NOTES.md](PROJECT_NOTES.md) — deployment and implementation notes
 
 ---
 
