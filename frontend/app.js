@@ -19,47 +19,50 @@ function fullUrl(path) {
 let jobs = [];
 let pollingIntervals = {};
 
-// DOM Elements
-const form = document.getElementById('generateForm');
-const submitBtn = document.getElementById('submitBtn');
-const jobsList = document.getElementById('jobsList');
-const durationSlider = document.getElementById('duration');
-const durationValue = document.getElementById('durationValue');
-const videoModal = document.getElementById('videoModal');
-const modalTitle = document.getElementById('modalTitle');
-const videoPlayer = document.getElementById('videoPlayer');
-const downloadLink = document.getElementById('downloadLink');
-const closeModal = document.getElementById('closeModal');
+// DOMContentLoaded wrapper ensures all elements exist before code runs
+document.addEventListener('DOMContentLoaded', () => {
+  // DOM Elements
+  const form = document.getElementById('generateForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const jobsList = document.getElementById('jobsList');
+  const durationSlider = document.getElementById('duration');
+  const durationValue = document.getElementById('durationValue');
+  const videoModal = document.getElementById('videoModal');
+  const modalTitle = document.getElementById('modalTitle');
+  const videoPlayer = document.getElementById('videoPlayer');
+  const downloadLink = document.getElementById('downloadLink');
+  const closeModal = document.getElementById('closeModal');
 
-// ========================================
-// Event Listeners
-// ========================================
+  // ========================================
+  // Event Listeners
+  // ========================================
 
-// Duration slider update
-durationSlider.addEventListener('input', () => {
-    durationValue.textContent = `${durationSlider.value}s`;
-});
+  // Duration slider update
+  durationSlider.addEventListener('input', () => {
+      durationValue.textContent = `${durationSlider.value}s`;
+  });
 
-// Form submission
-form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await generateVideo();
-});
+  // Form submission
+  form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await generateVideo();
+  });
 
-// Modal close
-closeModal.addEventListener('click', () => {
-    videoModal.classList.remove('active');
-    videoPlayer.pause();
-    videoPlayer.src = '';
-});
+  // Modal close
+  closeModal.addEventListener('click', () => {
+      videoModal.classList.remove('active');
+      videoPlayer.pause();
+      videoPlayer.src = '';
+  });
 
-// Click outside modal to close
-videoModal.addEventListener('click', (e) => {
-    if (e.target === videoModal) {
-        videoModal.classList.remove('active');
-        videoPlayer.pause();
-        videoPlayer.src = '';
-    }
+  // Click outside modal to close
+  videoModal.addEventListener('click', (e) => {
+      if (e.target === videoModal) {
+          videoModal.classList.remove('active');
+          videoPlayer.pause();
+          videoPlayer.src = '';
+      }
+  });
 });
 
 // Initialize - Load saved jobs from localStorage
