@@ -6,8 +6,8 @@
 // Configuration — auto-detect backend URL
 // When served from GitHub Pages the backend is EC2; when served from EC2 itself use relative paths.
 const API_BASE = window.location.hostname === 'insominiac21.github.io'
-    ? 'http://13.126.103.26:8000'
-    : 'http://localhost:8000';
+  ? 'http://13.126.103.26:8000'
+  : '';
 
 /** Resolve a possibly-relative API path to an absolute URL. */
 function fullUrl(path) {
@@ -19,7 +19,7 @@ function fullUrl(path) {
 let jobs = [];
 let pollingIntervals = {};
 
-// DOM Elements (global scope, like Nova)
+// DOM Elements
 const form = document.getElementById('generateForm');
 const submitBtn = document.getElementById('submitBtn');
 const jobsList = document.getElementById('jobsList');
@@ -32,7 +32,7 @@ const downloadLink = document.getElementById('downloadLink');
 const closeModal = document.getElementById('closeModal');
 
 // ========================================
-// Event Listeners (global scope, like Nova)
+// Event Listeners
 // ========================================
 
 // Duration slider update
@@ -62,22 +62,6 @@ videoModal.addEventListener('click', (e) => {
     }
 });
 
-// Initialize - Load saved jobs from localStorage
-document.addEventListener('DOMContentLoaded', () => {
-    loadJobsFromStorage();
-    renderJobs();
-    initPlanModal();
-    
-    // Clear history button
-    document.getElementById('clearHistoryBtn')?.addEventListener('click', () => {
-        if(confirm('Are you sure you want to clear all video history? This cannot be undone.')) {
-            localStorage.removeItem('mentorbocai_jobs');
-            jobs = [];
-            renderJobs();
-            showNotification('History cleared', 'success');
-        }
-    });
-});
 // Initialize - Load saved jobs from localStorage
 document.addEventListener('DOMContentLoaded', () => {
     loadJobsFromStorage();
@@ -207,21 +191,11 @@ function openPlanPreview(jobId) {
  * Generate a new video
  */
 async function generateVideo() {
-
-    // Debug: Check for missing elements
-    const conceptEl = document.getElementById('concept');
-    const goalEl = document.getElementById('goal');
-    const maxScenesEl = document.getElementById('maxScenes');
-    if (!conceptEl) console.error('Missing element: #concept');
-    if (!goalEl) console.error('Missing element: #goal');
-    if (!durationSlider) console.error('Missing element: #duration (durationSlider)');
-    if (!maxScenesEl) console.error('Missing element: #maxScenes');
-
     const formData = {
-        concept: conceptEl ? conceptEl.value.trim() : '',
-        goal: goalEl ? goalEl.value.trim() : '',
-        duration_seconds: durationSlider ? parseInt(durationSlider.value) : 0,
-        max_scenes: maxScenesEl ? parseInt(maxScenesEl.value) : 0,
+        concept: document.getElementById('concept').value.trim(),
+        goal: document.getElementById('goal').value.trim(),
+        duration_seconds: parseInt(durationSlider.value),
+        max_scenes: parseInt(document.getElementById('maxScenes').value),
         auto_render: true,
         fast_mode: true
     };
@@ -302,9 +276,6 @@ async function pollJobStatus(jobId) {
         const jobIndex = jobs.findIndex(j => j.job_id === jobId);
         if (jobIndex !== -1) {
             jobs[jobIndex] = { ...jobs[jobIndex], ...data };
-            if (data.plan) {
-                jobs[jobIndex].narrations = extractNarrations(data.plan);
-            }
             saveJobsToStorage();
             renderJobs();
 
@@ -401,23 +372,6 @@ function renderJobs() {
 }
 
 /**
- * Extract narrations from plan timeline (play_caption texts)
- */
-function extractNarrations(plan) {
-    if (!plan || !plan.timeline) return [];
-    return plan.timeline.map(scene => {
-        const narration = (scene.actions || [])
-            .map(action => {
-                const m = action.match(/play_caption\(['"](.+?)['"]\)/);
-                return m ? m[1] : null;
-            })
-            .filter(Boolean)
-            .join(' ');
-        return { title: scene.name || `Scene ${scene.scene}`, narration };
-    }).filter(scene => scene.narration);
-}
-
-/**
  * Open video modal
  */
 function openVideo(jobId) {
@@ -428,22 +382,6 @@ function openVideo(jobId) {
     videoPlayer.src = fullUrl(job.video_url);
     downloadLink.href = fullUrl(job.video_url);
     downloadLink.download = `${job.concept.replace(/\s+/g, '_')}.mp4`;
-
-    const notesPanel = document.getElementById('speakerNotesPanel');
-    const notesList = document.getElementById('speakerNotesList');
-    const narrations = job.narrations || extractNarrations(job.plan);
-
-    if (narrations && narrations.length > 0) {
-        notesList.innerHTML = narrations.map(note => `
-            <div class="note-item">
-                <span class="note-scene">${escapeHtml(note.title)}</span>
-                <span class="note-text">${escapeHtml(note.narration)}</span>
-            </div>
-        `).join('');
-        notesPanel.style.display = 'block';
-    } else {
-        notesPanel.style.display = 'none';
-    }
 
     videoModal.classList.add('active');
 }
