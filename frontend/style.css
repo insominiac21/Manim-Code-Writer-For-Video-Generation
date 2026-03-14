@@ -603,10 +603,51 @@ body {
   border: none;
 }
 
-.btn-regenerate {
-  background: white;
-  border: 2px solid var(--border);
+/* Speaker Notes Panel */
+.speaker-notes-panel {
+  margin-top: 16px;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.notes-heading {
+  font-size: 12px;
+  font-weight: 700;
   color: var(--text-secondary);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.note-item {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  align-items: flex-start;
+}
+
+.note-scene {
+  font-weight: 700;
+  color: var(--primary);
+  white-space: nowrap;
+  min-width: 80px;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+.note-text {
+  color: var(--text-primary);
 }
 
 /* Tabs */
