@@ -7,7 +7,7 @@
 // When served from GitHub Pages the backend is EC2; when served from EC2 itself use relative paths.
 const API_BASE = window.location.hostname === 'insominiac21.github.io'
     ? 'http://13.126.103.26:8000'
-  : '';
+    : 'http://localhost:8000';
 
 /** Resolve a possibly-relative API path to an absolute URL. */
 function fullUrl(path) {
@@ -62,11 +62,28 @@ videoModal.addEventListener('click', (e) => {
     }
 });
 
-// Initialize - Load saved jobs from localStorage (DOMContentLoaded for init only)
+// Initialize - Load saved jobs from localStorage
 document.addEventListener('DOMContentLoaded', () => {
     loadJobsFromStorage();
     renderJobs();
     initPlanModal();
+    
+    // Clear history button
+    document.getElementById('clearHistoryBtn')?.addEventListener('click', () => {
+        if(confirm('Are you sure you want to clear all video history? This cannot be undone.')) {
+            localStorage.removeItem('mentorbocai_jobs');
+            jobs = [];
+            renderJobs();
+            showNotification('History cleared', 'success');
+        }
+    });
+});
+// Initialize - Load saved jobs from localStorage
+document.addEventListener('DOMContentLoaded', () => {
+    loadJobsFromStorage();
+    renderJobs();
+    initPlanModal();
+    
     // Clear history button
     document.getElementById('clearHistoryBtn')?.addEventListener('click', () => {
         if(confirm('Are you sure you want to clear all video history? This cannot be undone.')) {
@@ -190,11 +207,21 @@ function openPlanPreview(jobId) {
  * Generate a new video
  */
 async function generateVideo() {
+
+    // Debug: Check for missing elements
+    const conceptEl = document.getElementById('concept');
+    const goalEl = document.getElementById('goal');
+    const maxScenesEl = document.getElementById('maxScenes');
+    if (!conceptEl) console.error('Missing element: #concept');
+    if (!goalEl) console.error('Missing element: #goal');
+    if (!durationSlider) console.error('Missing element: #duration (durationSlider)');
+    if (!maxScenesEl) console.error('Missing element: #maxScenes');
+
     const formData = {
-        concept: document.getElementById('concept').value.trim(),
-        goal: document.getElementById('goal').value.trim(),
-        duration_seconds: parseInt(durationSlider.value),
-        max_scenes: parseInt(document.getElementById('maxScenes').value),
+        concept: conceptEl ? conceptEl.value.trim() : '',
+        goal: goalEl ? goalEl.value.trim() : '',
+        duration_seconds: durationSlider ? parseInt(durationSlider.value) : 0,
+        max_scenes: maxScenesEl ? parseInt(maxScenesEl.value) : 0,
         auto_render: true,
         fast_mode: true
     };
