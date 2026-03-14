@@ -1,7 +1,6 @@
 __pycache__/
 .env
-.env.local
-.env.*.local
+.env.*
 *.pyc
 *.pyo
 *.pyd
@@ -18,4 +17,3 @@ venv/
 node_modules/
 output/
 media/
-deploy.txt

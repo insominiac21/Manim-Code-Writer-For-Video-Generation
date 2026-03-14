@@ -1,16 +1,16 @@
-def extract_narration_from_plan(plan: dict) -> list:
+# Standalone helper: Extract narration lines from plan JSON
+def get_narration_lines_from_plan(plan: dict) -> list:
     """
-    Extract narration lines from each scene in the plan JSON, if present.
-    Returns a list of narration strings (one per scene), or an empty list if not found.
+    Given a plan JSON (dict), return a list of narration lines (if present) from each scene.
+    Supports both 'timeline' and 'scenes' keys for compatibility.
     """
-    narration_lines = []
-    # Support both 'timeline' and 'scenes' keys for compatibility
     scenes = plan.get('timeline') or plan.get('scenes') or []
+    narrations = []
     for scene in scenes:
         narration = scene.get('narration')
         if narration:
-            narration_lines.append(narration)
-    return narration_lines
+            narrations.append(narration)
+    return narrations
 
 # Pipeline service and job management for MentorBoxAI (migrated from backend_local.py)
 import os

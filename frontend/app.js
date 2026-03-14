@@ -161,6 +161,28 @@ function initPlanModal() {
     });
 }
 
+// Helper: Extract narration lines from plan JSON (timeline or scenes)
+function extractNarrationLines(plan) {
+    const scenes = plan?.timeline || plan?.scenes || [];
+    return scenes
+        .map(scene => scene.narration)
+        .filter(narration => narrations && typeof narrations === 'string');
+}
+
+// Add narration display to the plan modal
+function renderNarrationLines(plan) {
+    const narrationLines = extractNarrationLines(plan);
+    const narrationPanel = document.getElementById('narrationPanel');
+    if (!narrationPanel) return;
+    if (narrationLines.length === 0) {
+        narrationPanel.style.display = 'none';
+        narrationPanel.innerHTML = '';
+        return;
+    }
+    narrationPanel.style.display = 'block';
+    narrationPanel.innerHTML = `<h4 class="notes-heading">🗣️ Narration</h4><ul class="narration-list">${narrationLines.map(line => `<li>${line}</li>`).join('')}</ul>`;
+}
+
 function openPlanPreview(jobId) {
     const job = jobs.find(j => j.job_id === jobId);
     if (!job) return;
